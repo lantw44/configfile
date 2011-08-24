@@ -1,0 +1,80 @@
+colorprompting='\[\e[1;31m\]\!\[\e[m\] [\[\e[1;33m\]\u\[\e[m\]@\[\e[1;32m\]\h\[\e[m\] \[\e[1;36m\]\w\[\e[m\]]\$ '
+nocolorprompting='\! [\u@\h \w]\$ '
+
+HISTSIZE=100000
+HISTFILESIZE=100000
+
+alias startcolor='PS1=$colorprompting'
+alias stopcolor='PS1=$nocolorprompting'
+
+alias ll='ls -l'
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+alias jobs='jobs -l'
+alias less='less -RS'
+
+alias cccc='LANG=C;LC_ALL=C'
+alias enus='LANG=en_US.UTF-8;LC_ALL=en_US.UTF-8'
+alias big5='LANG=zh_TW.Big5;LC_ALL=zh_TW.Big5'
+alias zhtw='LANG=zh_TW.UTF-8;LC_ALL=zh_TW.UTF-8'
+alias utf8='LANG=zh_TW.UTF-8;LC_ALL=zh_TW.UTF-8'
+
+default_tty_setting=`stty -g`
+alias savetty='default_tty_setting=`stty -g`'
+alias resetty='stty $default_tty_setting'
+
+# Function
+
+function compile_all ()
+{
+	noask=0
+	[ "$1" == '' ] && echo "Which file(s) do you want to compile? " && return 1
+	[ "$1" == "-n" ] && noask=1
+	if [ "$noask" == "0" ]; then
+		read -p "CFLAGS [$CFLAGS] ? " NEWCFLAGS
+		read -p "LDFLAGS [$LDFLAGS] ? " NEWLDFLAGS
+		[ "$NEWCFLAGS" '!=' '' ] && CFLAGS=$NEWCFLAGS
+		[ "$NEWLDFLAGS" '!=' '' ] && LDFLAGS=$NEWLDFLAGS
+	else
+		shift
+	fi
+	while [ "$1" '!=' '' ]
+	do
+		TARGETFILE="`echo "$1" | cut -d . -f 1`"
+		SUFFIX="`echo "$1" | cut -d . -f 2`"
+		if [ -f "$1" ]; then
+			true
+		else
+		   	printf\
+	   		'\e[1;33mWarning\e[0m: Non-existent file or not a regular file\n'
+			shift ; continue
+		fi
+		[ "$TARGETFILE" == "$1" ] && shift && continue
+		if [ "$SUFFIX" == "c" ]; then
+			echo "[CC] $1 -> $TARGETFILE"
+			gcc $CFLAGS "$1" $LDFLAGS -o "$TARGETFILE"
+		elif [ "$SUFFIX" == "cpp" ]; then
+			echo "[CXX] $1 -> $TARGETFILE"
+			g++ $CFLAGS "$1" $LDFLAGS -o "$TARGETFILE"
+		else
+			printf 'Unknown suffix (\e[1;33mskipped\e[0m)\n'
+		fi
+		[ "$?" '!=' "0" ] && printf\
+	   		'\e[1;31mError\e[0m while compiling file\n'
+		shift
+	done
+	return 0
+}
+
+
+# Starting doing something
+
+startcolor
+
+umask 0022
+
+bind '"\e[A":history-search-backward'
+bind '"\e[B":history-search-forward'
+
+shopt -s histappend

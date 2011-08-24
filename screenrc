@@ -1,0 +1,15 @@
+caption always "%{= kc}%-Lw%{= br}%n %t%{= kc}%+Lw %=%{= g}%l"
+
+vbell off
+vbellwait 0
+defscrollback 65536
+
+hardcopydir /home/lantw44/hardcopy
+
+deflogin on
+shell -bash
+screen
+title bash
+deflogin off
+
+zombie ^C^R
