@@ -1,5 +1,5 @@
 let $ERRFILE="/tmp/f8fe1f28-6e6e-11e0-b22e-000c760ae4c6.err"
-let $CFLAGS="-Wall -O2 -pipe"
+let $CFLAGS="-Wall -pipe"
 let $LDFLAGS=""
 set bs=2
 set ls=2
@@ -27,7 +27,7 @@ function! SingleCompile()
 	endif
 endfunction
 
-map <F1> :echo "CFLAGS="$CFLAGS"\n"<CR>:let $CFLAGS="-Wall -O2 -pipe
+map <F1> :set foldmethod=syntax
 map <F2> :cl<CR>
 map <F3> :cp<CR>
 map <F4> :cn<CR>
@@ -36,7 +36,7 @@ map <F6> :tabn<CR>
 map <F7> :set background=light<CR>:highlight Comment ctermfg=darkcyan<CR>
 map <F8> :set background=dark<CR>:highlight PreProc ctermfg=darkcyan<CR>
 map <F9> :call SingleCompile()<CR>
-map <F10> :make<CR>
+map <F10> :echo "CFLAGS="$CFLAGS"\n"<CR>:let $CFLAGS="-Wall -pipe
 map <F11> :echo "LDFLAGS="$LDFLAGS"\n"<CR>:let $LDFLAGS="
 map <F12> :!less -R %:p:.<CR>
 imap <F1> <ESC><F1>
