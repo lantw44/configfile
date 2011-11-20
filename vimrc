@@ -1,5 +1,5 @@
-let $ERRFILE="/tmp/f8fe1f28-6e6e-11e0-b22e-000c760ae4c6.err"
-let $CFLAGS="-Wall -pipe"
+let $ERRFILE="/tmp/fc0edaa9-1383-11e1-8659-000c760ae4c6.err"
+let $CFLAGS="-Wall -pipe -g"
 let $LDFLAGS=""
 set bs=2
 set ls=2
@@ -17,11 +17,11 @@ highlight Search term=reverse ctermbg=4 ctermfg=7
 function! SingleCompile()
 	let file_suffix = expand("%:e")
 	if file_suffix == "c"
-		!gcc ${CFLAGS} %:p:. -o %:r ${LDFLAGS} 2>&1 | tee ${ERRFILE}
-		cg ${ERRFILE}
+		!gcc ${CFLAGS} %:p:. -o %:r ${LDFLAGS} 2>&1 | tee ${HOME}${ERRFILE}
+		cg ${HOME}${ERRFILE}
 	elseif file_suffix == "cpp"
-		!g++ ${CFLAGS} %:p:. -o %:r ${LDFLAGS} 2>&1 | tee ${ERRFILE}
-		cg ${ERRFILE}
+		!g++ ${CFLAGS} %:p:. -o %:r ${LDFLAGS} 2>&1 | tee ${HOME}${ERRFILE}
+		cg ${HOME}${ERRFILE}
 	else
 		echo "This file has an UNKNOWN SUFFIX!"
 	endif

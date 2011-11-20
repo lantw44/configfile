@@ -9,7 +9,7 @@ alias stopcolor='PS1=$nocolorprompting'
 
 alias ll='ls -l'
 alias rm='rm -i'
-alias cp='cp -i'
+alias cp='cp -pi'
 alias mv='mv -i'
 alias jobs='jobs -l'
 alias less='less -RS'
@@ -23,6 +23,8 @@ alias utf8='LANG=zh_TW.UTF-8;LC_ALL=zh_TW.UTF-8'
 default_tty_setting=`stty -g`
 alias savetty='default_tty_setting=`stty -g`'
 alias resetty='stty $default_tty_setting'
+
+alias sg='sudo -g'
 
 # Function
 
@@ -68,6 +70,37 @@ function compile_all ()
 }
 
 
+function convert_to_html ()
+{
+	while [ "$1" '!=' '' ]
+	do
+		for i in "$1"
+		do 
+			vim $i -c 'set background=dark' \
+				-c 'highlight PreProc ctermfg=darkcyan' \
+				-c "$BEFORE_CONVERT_TO_HTML" \
+				-c TOhtml \
+				-c :w \
+				-c :qa 
+		done
+		shift
+	done
+}
+
+function mkscreenacl ()
+{
+	PERMIT_COMMAND="select windowlist other meta detach reset hardcopy info redisplay lastmsg next prev xon xoff windows suspend help colon copy paste writebuf readbuf displays stuff attach"
+	while [ "$1" '!=' '' ]
+	do
+		for i in $PERMIT_COMMAND
+		do
+			echo "aclchg $1 +x $i"
+		done
+		echo "aclchg $1 -rw \"#?\""	
+		shift
+	done
+}
+
 # Starting doing something
 
 startcolor
@@ -78,3 +111,5 @@ bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
 
 shopt -s histappend
+
+# ~/check_dmesg.sh 5 &
