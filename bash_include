@@ -107,8 +107,12 @@ startcolor
 
 umask 0022
 
-bind '"\e[A":history-search-backward'
-bind '"\e[B":history-search-forward'
+tty -s
+if [ "$?" == "0" ]
+then
+    bind '"\e[A":history-search-backward'
+	bind '"\e[B":history-search-forward'
+fi
 
 shopt -s histappend
 
