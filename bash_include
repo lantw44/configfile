@@ -101,6 +101,35 @@ function mkscreenacl ()
 	done
 }
 
+function bgrun ()
+{
+	[ "$#" == "0" ] && return 1
+	current_time=`date "+%Y%m%d-%H%M%S"`
+	filename="$HOME/tmp/$1-$current_time"
+	echo "Writing to $filename"
+	"$@" &> "$filename" &
+}
+
+function bgout()
+{
+	if [ "$1" == "" ]
+	then
+		yourchoice=1
+	fi
+	rootfilename=`find ~/tmp/ -maxdepth 1 -mindepth 1 | cut -d - -f 2,3 | sort -r | sed -n ${yourchoice}p`
+	realfilename=`find ~/tmp/ -maxdepth 1 -mindepth 1 | grep "$rootfilename"`
+	if [ "$PAGER" == "" ]
+	then
+		PAGER=less
+	fi
+	read -p "View '$realfilename' ? " confirm
+	if [ "$confirm" == "n" ] || [ "$confirm" == "N" ]
+	then
+		return 1
+	fi
+	"$PAGER" "$realfilename"
+}
+
 # Starting doing something
 
 startcolor
