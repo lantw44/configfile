@@ -1,9 +1,6 @@
 #!/bin/bash
 #
-# --- UTF-8 ---
-#
-# 檔案製作者：lantw44
-# 更新日期：2011/11/28
+# This file is made by lantw44.
 #
 
 echo "Running .bash_include"
@@ -26,7 +23,7 @@ HISTCONTROL=ignoredups:ignorespace
 
 
 
-# Environmental Variables
+# Environment Variables
 
 export EDITOR=vim
 export FCEDIT=vim
@@ -137,34 +134,64 @@ function mkscreenacl ()
 
 ########## Background ##########
 
+alias bgr=bgrun
+alias bgv=bgview
+alias bgl=bglist
+alias bgc=bgcount
+alias bgls=bglist
+
 function bgrun ()
 {
 	[ "$#" = "0" ] && return 1
 	[ '!' -d "$bgrunfiledir" ] && mkdir -p "$bgrunfiledir"
 	current_time=`date "+%Y%m%d-%H%M%S"`
-	filename="$bgrunfiledir/$1-$current_time"
+	cmdname=`echo "$1" | sed -e 's/-/_/g' -e 's/\\//_/g' -e 's/ //g'`
+	if [ "`echo "$cmdname" | cut -c 1`" == "_" ]
+	then
+		cmdname=`echo "$cmdname" | cut -c 2-`
+	fi
+	filename="$bgrunfiledir/$current_time-$cmdname"
 	echo "Writing to $filename"
-	"$@" &> "$filename" &
+	echo "$@" > $filename
+	"$@" &>> "$filename" &
+}
+
+function bglist ()
+{
+	{
+		for i in `find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort`
+		do
+			head -n 1 "$i"
+		done
+	} | cat -n | $PAGER
 }
 
 function bgview ()
 {
+	declare -i yourchoice
 	if [ "$1" = "" ]
 	then
-		yourchoice=1
+		yourchoice=`bgcount`
+	else
+		if [ "$1" -le "0" ]
+		then
+			yourchoice=$((`bgcount`+$1))
+		else
+			yourchoice=$1
+		fi
 	fi
-	rootfilename=`find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | cut -d - -f 2,3 | sort -r | sed -n ${yourchoice}p`
-	realfilename=`find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | grep "$rootfilename"`
-	if [ "$PAGER" = "" ]
-	then
-		PAGER=less
-	fi
+	echo "Your choice is $yourchoice."
+	realfilename=`find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort | sed -n ${yourchoice}p`
+	echo "Command Line: `head -n 1 "$realfilename"`"
 	read -p "View '$realfilename' ? " confirm
 	if [ "$confirm" = "n" ] || [ "$confirm" = "N" ]
 	then
 		return 1
 	fi
-	"$PAGER" "$realfilename"
+	{
+		printf "Command Line: "
+		cat "$realfilename"
+	} | $PAGER
 }
 
 function bgcount ()
@@ -172,7 +199,7 @@ function bgcount ()
 	find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | cut -d - -f 2,3 | wc | awk '{print $2}'
 }
 
-########## Background ##########
+########## Background End ##########
 
 function check_dmesg ()
 {
