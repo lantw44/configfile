@@ -14,7 +14,7 @@ nocolorprompting='\! [\u@\h \w]\$ '
 
 historycountfile="$HOME/.bash_history.count"
 historybackupfile="$HOME/.bash_history.bak"
-bgrunfiledir="$HOME/tmp/bgrun"
+bgrunfiledir="$HOME/tmp/bgrun-`whoami`"
 
 HISTSIZE=1000000
 HISTFILESIZE=1000000
@@ -139,6 +139,7 @@ alias bgv=bgview
 alias bgl=bglist
 alias bgc=bgcount
 alias bgls=bglist
+alias bgrm=bgclean
 
 function bgrun ()
 {
@@ -199,6 +200,23 @@ function bgcount ()
 	find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | cut -d - -f 2,3 | wc | awk '{print $2}'
 }
 
+function bgclean ()
+{
+	while [ "$1" ]
+	do
+		if [ "$1" = "all" ]
+		then
+			echo "Removing the directory $bgrunfiledir"
+			rm -rf "$bgrunfiledir" &
+			return 0
+		fi
+		filename=`find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort | sed -n $1p`
+		echo "Removing $filename"
+		rm -f $filename
+		shift
+	done
+}
+
 ########## Background End ##########
 
 function check_dmesg ()
@@ -236,13 +254,41 @@ function prehistory_backup ()
 		return 1
 	fi
 	echo "$currentcount" > "$historycountfile"
-	cp -f "$HISTFILE" "$historybackupfile"
+	\cp -f "$HISTFILE" "$historybackupfile"
 }
 
+########## Trash Manager ##########
+
+function trash_mv ()
+{
+	echo aa
+}
+
+function trash_rm ()
+{
+	echo bb
+}
+
+function trash_ls ()
+{
+	echo cc
+}
+
+function trash_view ()
+{
+	echo dd
+}
+
+function trash_du ()
+{
+	echo ee
+}
+
+########## Trash Manager End ##########
 
 
 
-# Starting doing something
+# Doing something
 
 startcolor
 prehistory_backup
