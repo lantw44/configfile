@@ -15,6 +15,7 @@ nocolorprompting='\! [\u@\h \w]\$ '
 historycountfile="$HOME/.bash_history.count"
 historybackupfile="$HOME/.bash_history.bak"
 bgrunfiledir="$HOME/tmp/bgrun-`whoami`"
+trashdir="$HOME/trash"
 
 HISTSIZE=1000000
 HISTFILESIZE=1000000
@@ -61,12 +62,14 @@ alias resetty='stty $default_tty_setting'
 
 function compile_all ()
 {
-	noask=0
+	local noask=0
 	[ "$1" = '' ] && echo "Which file(s) do you want to compile? " && return 1
 	[ "$1" = "-n" ] && noask=1
 	if [ "$noask" = "0" ]; then
-		read -p "CFLAGS [$CFLAGS] ? " NEWCFLAGS
-		read -p "LDFLAGS [$LDFLAGS] ? " NEWLDFLAGS
+#		read -p "CFLAGS [$CFLAGS] ? " NEWCFLAGS
+#		read -p "LDFLAGS [$LDFLAGS] ? " NEWLDFLAGS
+		read -e -p "CFLAGS: " -i "$CFLAGS" NEWCFLAGS
+		read -e -p "LDFLAGS: " -i "$LDFLAGS" NEWLDFLAGS
 		[ "$NEWCFLAGS" '!=' '' ] && CFLAGS=$NEWCFLAGS
 		[ "$NEWLDFLAGS" '!=' '' ] && LDFLAGS=$NEWLDFLAGS
 	else
@@ -74,8 +77,8 @@ function compile_all ()
 	fi
 	while [ "$1" '!=' '' ]
 	do
-		TARGETFILE="`echo "$1" | cut -d . -f 1`"
-		SUFFIX="`echo "$1" | cut -d . -f 2`"
+		local TARGETFILE="`echo "$1" | cut -d . -f 1`"
+		local SUFFIX="`echo "$1" | cut -d . -f 2`"
 		if [ -f "$1" ]; then
 			true
 		else
@@ -145,13 +148,13 @@ function bgrun ()
 {
 	[ "$#" = "0" ] && return 1
 	[ '!' -d "$bgrunfiledir" ] && mkdir -p "$bgrunfiledir"
-	current_time=`date "+%Y%m%d-%H%M%S"`
-	cmdname=`echo "$1" | sed -e 's/-/_/g' -e 's/\\//_/g' -e 's/ //g'`
+	local current_time=`date "+%Y%m%d-%H%M%S"`
+	local cmdname=`echo "$1" | sed -e 's/-/_/g' -e 's/\\//_/g' -e 's/ //g'`
 	if [ "`echo "$cmdname" | cut -c 1`" == "_" ]
 	then
 		cmdname=`echo "$cmdname" | cut -c 2-`
 	fi
-	filename="$bgrunfiledir/$current_time-$cmdname"
+	local filename="$bgrunfiledir/$current_time-$cmdname"
 	echo "Writing to $filename"
 	echo "$@" > $filename
 	"$@" &>> "$filename" &
@@ -159,17 +162,46 @@ function bgrun ()
 
 function bglist ()
 {
+	local viewtime=0
+	[ "$1" = "--full" ] && viewtime=1
 	{
 		for i in `find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort`
 		do
+			[ "$viewtime" == "1" ] && echo "$i"
 			head -n 1 "$i"
 		done
-	} | cat -n | $PAGER
+	} | {
+		if [ "$viewtime" == "1" ]
+		then
+			local readstat=0
+			local -i i=1
+			while true
+			do
+				local dateandtime_long
+				local cmdline
+				read dateandtime_long
+				read cmdline
+				[ "$?" '!=' "0" ] && break
+				local dateandtime=`basename "$dateandtime_long"`
+				local part_year=`echo $dateandtime | cut -c 1-4`
+				local part_month=`echo $dateandtime | cut -c 5-6`
+				local part_date=`echo $dateandtime | cut -c 7-8`
+				local part_hour=`echo $dateandtime | cut -c 10-11`
+				local part_minute=`echo $dateandtime | cut -c 12-13`
+				local part_second=`echo $dateandtime | cut -c 14-15`
+				printf '%6d' "$i" 
+				echo " $part_year-$part_month-$part_date $part_hour:$part_minute:$part_second $cmdline"
+				i=$i+1
+			done
+		else
+			cat -n
+		fi
+	} | $PAGER
 }
 
 function bgview ()
 {
-	declare -i yourchoice
+	local -i yourchoice
 	if [ "$1" = "" ]
 	then
 		yourchoice=`bgcount`
@@ -182,9 +214,9 @@ function bgview ()
 		fi
 	fi
 	echo "Your choice is $yourchoice."
-	realfilename=`find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort | sed -n ${yourchoice}p`
+	local realfilename=`find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort | sed -n ${yourchoice}p`
 	echo "Command Line: `head -n 1 "$realfilename"`"
-	read -p "View '$realfilename' ? " confirm
+	read -e -p "View '$realfilename' ? " confirm
 	if [ "$confirm" = "n" ] || [ "$confirm" = "N" ]
 	then
 		return 1
@@ -210,7 +242,7 @@ function bgclean ()
 			rm -rf "$bgrunfiledir" &
 			return 0
 		fi
-		filename=`find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort | sed -n $1p`
+		local filename=`find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort | sed -n $1p`
 		echo "Removing $filename"
 		rm -f $filename
 		shift
@@ -237,9 +269,9 @@ function check_dmesg ()
 function prehistory_backup ()
 {
 	echo "Running prehistory_backup"
-	currentcount=`wc "$HISTFILE" | awk '{print $1}'`
+	local currentcount=`wc "$HISTFILE" | awk '{print $1}'`
 	[ '!' -f "$historycountfile" ] && touch "$historycountfile"
-	declare -i previoushistorycount
+	local -i previoushistorycount
 	previoushistorycount=`cat "$historycountfile"`
 	if [ "$currentcount" -lt "$previoushistorycount" ]
 	then
@@ -261,7 +293,10 @@ function prehistory_backup ()
 
 function trash_mv ()
 {
-	echo aa
+	[ "$#" = "0" ] && return 1
+	[ '!' -d "$trashdir" ] && mkdir -p "$trashdir"
+	local current_time=`date "+%Y%m%d-%H%M%S"`
+
 }
 
 function trash_rm ()
@@ -286,7 +321,14 @@ function trash_du ()
 
 ########## Trash Manager End ##########
 
+########## Help ##########
 
+function help_function ()
+{
+	echo uu
+}
+
+########## Help End ##########
 
 # Doing something
 
