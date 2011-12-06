@@ -149,7 +149,7 @@ function bgrun ()
 	[ "$#" = "0" ] && return 1
 	[ '!' -d "$bgrunfiledir" ] && mkdir -p "$bgrunfiledir"
 	local current_time=`date "+%Y%m%d-%H%M%S"`
-	local cmdname=`echo "$1" | sed -e 's/-/_/g' -e 's/\\//_/g' -e 's/ //g'`
+	local cmdname=`echo "$1" | sed -e 's/-/_/g' -e 's/\\//_/g' -e 's/ /_/g'`
 	if [ "`echo "$cmdname" | cut -c 1`" == "_" ]
 	then
 		cmdname=`echo "$cmdname" | cut -c 2-`
@@ -249,6 +249,11 @@ function bgclean ()
 	done
 }
 
+function bgdu () 
+{
+	du -a "$bgrunfiledir"
+}
+
 ########## Background End ##########
 
 function check_dmesg ()
@@ -291,12 +296,61 @@ function prehistory_backup ()
 
 ########## Trash Manager ##########
 
+alias trash_put=trash_mv
+
+function split_arguments ()
+{
+	local argcount=$#
+	local -i i=0
+	local prefix_start=0
+	while [ "$1" ]
+	do
+		if [ "$prefix_start" == "0" ]
+		then
+			if [ "$1" = "--" ]
+			then
+				prefix_start=1
+				i=0
+				shift
+				continue
+			else
+				arglist[$i]="$1"
+			fi
+		else
+			prefixlist[$i]="$1"
+		fi
+		i=$i+1
+		shift
+	done
+	i=0
+
+}
+
 function trash_mv ()
 {
 	[ "$#" = "0" ] && return 1
 	[ '!' -d "$trashdir" ] && mkdir -p "$trashdir"
-	local current_time=`date "+%Y%m%d-%H%M%S"`
-
+	local original_path
+	local current_time
+	local -i i=0
+	split_arguments "$@"
+	while [ "${arglist[$i]}" ]
+	do
+		original_path="`realpath "${arglist[$i]}"`"
+		current_time=`date "+%Y%m%d-%H%M%S"`
+		better_time=`date "+%Y-%m-%d %H:%M:%S"`
+		dirname="`basename "${arglist[$i]}" | sed -e 's/-/_/g' -e 's/ /_/g'`"
+		fulldirname="$trashdir/$current_time-$dirname"
+		mkdir -p "$fulldirname"
+		echo "Move: ${arglist[$i]} -> $fulldirname"
+		"${prefixlist[@]}" mv "${arglist[$i]}" "$fulldirname"
+		echo "$better_time" > "$fulldirname/information.date"
+		echo "$original_path" > "$fulldirname/information.path"
+		i=$i+1
+		shift
+	done
+	unset arglist
+	unset prefixlist
 }
 
 function trash_rm ()
@@ -316,7 +370,7 @@ function trash_view ()
 
 function trash_du ()
 {
-	echo ee
+	du -d 1 "$trashdir"
 }
 
 ########## Trash Manager End ##########
@@ -326,6 +380,19 @@ function trash_du ()
 function help_function ()
 {
 	echo uu
+}
+
+function help_myself () 
+{
+	echo "argc = $#"
+	echo "argv[0] = $0"
+	i=1
+	while [ "$1" ]
+	do
+		echo "argv[$i] = $1"
+		i=$(($i+1))
+		shift
+	done
 }
 
 ########## Help End ##########
