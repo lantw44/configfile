@@ -2,6 +2,8 @@
 #
 # This file is made by lantw44.
 #
+# -- UTF-8 --
+#
 
 echo "Running .bash_include"
 
@@ -234,19 +236,30 @@ function bgcount ()
 
 function bgclean ()
 {
-	while [ "$1" ]
-	do
-		if [ "$1" = "all" ]
-		then
-			echo "Removing the directory $bgrunfiledir"
-			rm -rf "$bgrunfiledir" &
-			return 0
-		fi
-		local filename=`find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort | sed -n $1p`
-		echo "Removing $filename"
-		rm -f $filename
-		shift
-	done
+	if [ "$1" = "all" ]
+	then
+		echo "Removing the directory $bgrunfiledir"
+		rm -rf "$bgrunfiledir" &
+		return 0
+	else
+		split_arguments "$@"
+		local -i i=0
+		while [ "${arglist[$i]}" ]
+		do
+			arglist[$i]="-e ${arglist[$i]}p"
+			i=$i+1
+		done
+		local oneline
+		find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort | sed -n ${arglist[*]} | {
+			while read oneline
+			do
+				echo "Removing $oneline"
+				rm -f "$oneline"
+			done
+		}
+	fi
+	unset arglist
+	unset prefixlist
 }
 
 function bgdu () 
@@ -264,7 +277,7 @@ function check_dmesg ()
 	do
 		PREVIOS_DMESG_BUF="$DMESG_BUF"
 		DMESG_BUF="`dmesg`"
-		[ "$PREVIOS_DMESG_BUF" '!=' "$DMESG_BUF" ] && [ "$FIRST_RUN" = "0" ] && echo '===> system message buffer was modified <==='
+		[ "$PREVIOS_DMESG_BUF" '!=' "$DMESG_BUF" ] && [ "$FIRST_RUN" = "4" ] && echo '===> system message buffer was modified <==='
 		sleep $1
 		[ "$?" '!=' "0" ] && return 1
 		FIRST_RUN=0
@@ -273,7 +286,7 @@ function check_dmesg ()
 
 function prehistory_backup ()
 {
-	echo "Running prehistory_backup"
+	echo "Backing up current history file"
 	local currentcount=`wc "$HISTFILE" | awk '{print $1}'`
 	[ '!' -f "$historycountfile" ] && touch "$historycountfile"
 	local -i previoushistorycount
@@ -288,7 +301,7 @@ function prehistory_backup ()
 		echo "    (You may need $historybackupfile to do it) "
 		echo " 3. Remove the file $historycountfile."
 		echo " 4. Run the command \`prehistory_backup' again."
-		return 1
+		return 3
 	fi
 	echo "$currentcount" > "$historycountfile"
 	\cp -f "$HISTFILE" "$historybackupfile"
@@ -298,33 +311,6 @@ function prehistory_backup ()
 
 alias trash_put=trash_mv
 
-function split_arguments ()
-{
-	local argcount=$#
-	local -i i=0
-	local prefix_start=0
-	while [ "$1" ]
-	do
-		if [ "$prefix_start" == "0" ]
-		then
-			if [ "$1" = "--" ]
-			then
-				prefix_start=1
-				i=0
-				shift
-				continue
-			else
-				arglist[$i]="$1"
-			fi
-		else
-			prefixlist[$i]="$1"
-		fi
-		i=$i+1
-		shift
-	done
-	i=0
-
-}
 
 function trash_mv ()
 {
@@ -363,23 +349,151 @@ function trash_ls ()
 	echo cc
 }
 
-function trash_view ()
+function trash_cd ()
 {
 	echo dd
 }
 
+function trash_recover ()
+{
+	echo yy
+}
+
+function trash_count () 
+{
+	echo zz
+}
+
 function trash_du ()
 {
-	du -d 1 "$trashdir"
+	split_arguments "$@"
+	local oneline
+	find "$trashdir" -maxdepth 1 -mindepth 1 | sort | {
+		while read oneline
+		do
+			echo "'$oneline'"
+		done
+	} | xargs -n 10 "${prefixlist[@]}" du -s
+	unset arglist
+	unset prefixlist
 }
 
 ########## Trash Manager End ##########
 
 ########## Help ##########
 
+alias helpf='help_function'
+alias helpm='help_myself'
+
+function print_iconv ()
+{
+	[ "$1" = "$2" ] && cat && return 0
+	iconv -f "$1" -t "$2" 
+}
+
 function help_function ()
 {
-	echo uu
+	[ "$#" = "0" ] && {
+		cat << ENDHELPMSG
+ <<< Help >>>
+    help_myself [arguments ...]
+    help_function [functions ...]
+ <<< Group Background >>>
+    bgrun command [arguments ...]
+    bglist [--full]
+    bgview [number]
+    bgclean [all | numbers ...]
+    bgcount
+    bgdu
+ <<< Group Trash >>>
+    trash_mv [filename ...] [-- prefix ...]
+    trash_ls
+    trash_cd [number]
+    trash_recover [number] [-- prefix ...]
+    trash_rm [all | numbers ...] [-- prefix ...]
+    trash_count
+    trash_du [-- prefix ...]
+ <<< Other >>>
+    split_arguments [arguments ...]
+    compile_all [-n] filename ...
+    convert_to_html filename ...
+    mkscreenacl username ...
+    check_dmesg seconds
+    prehistory_backup
+ENDHELPMSG
+	} && return 0
+	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
+####local helpmsg_bgrun[0]='bgrun command [arguments ...]'
+####local helpmsg_bgrun[1]='執行指令 command 並將輸出導入檔案'
+####local helpmsg_bgrun[2]='註：此函式會自動以目前時間和指令名稱為檔案命名'
+####local helpmsg_bglist[0]='bglist [--full]'
+####local helpmsg_bglist[1]='列出所有使用 bgrun 執行的指令'
+####local helpmsg_bglist[2]='若加上 --full 選項，則可同時察看時間'
+####local helpmsg_view[0]='bgview [number]'
+####local helpmsg_view[1]='顯示以 bgrun 執行指令的輸出，若省略 number，表示是最近一次執行的指令'
+####local helpmsg_view[2]='若 number >  0，表示第 number 個指令 (此數值可由 bglist 函式取得)'
+####local helpmsg_view[3]='若 number <= 0，表示第「指令總數-number」個指令 (指令總數可由 bgcount 函式取得)'
+	local -i i
+	while [ "$1" ]
+	do
+		case "$1" in
+			"bgrun")
+# echo "Run a command in background and redirect its output to file."
+# echo "Note: The name of the file is automatically generated from current time and command name."
+#				i=0; while [ "${helpmsg_bgrun[$i]}" ]; do print_iconv "UTF-8" "$current_charset" "${helpmsg_bgrun[$i]}"; i=$i+1; done
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bgrun command [arguments ...]
+    執行指令 command 並將輸出導入檔案
+    註：此函式會自動以目前時間和指令名稱為檔案命名
+ENDHELPMSG
+				;;
+			"bglist")
+# echo "List command started by bgrun."
+# echo "    Options:"
+# echo "      --full   print time as well."
+#				i=0; while [ "${helpmsg_bglist[$i]}" ]; do print_iconv "UTF-8" "$current_charset" "${helpmsg_bglist[$i]}"; i=$i+1; done
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bglist [--full]
+    列出所有使用 bgrun 執行的指令
+    若加上 --full 選項，則可同時察看時間
+ENDHELPMSG
+				;;
+			"bgview")
+#				i=0; while [ "${helpmsg_bgview[$i]}" ]; do print_iconv "UTF-8" "$current_charset" "${helpmsg_bgview[$i]}"; i=$i+1; done
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bgview [number]
+    顯示以 bgrun 執行指令的輸出，若省略 number，表示是最近一次執行的指令
+    若 number >  0，
+	    表示第 number 個指令 (此數值可由 bglist 函式取得)
+    若 number <= 0，
+	    表示第「指令總數-number」個指令 (指令總數可由 bgcount 函式取得)
+ENDHELPMSG
+				;;
+			"bgclean")
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bgclean [all | numbers ...]
+    bgclean all 可清除所有指令的輸出檔
+    bgclean 3 5 7 10 表示清除第 3、5、7、10 個指令輸出檔 (編號可由 bglist 取得)
+ENDHELPMSG
+				;;
+			"bgcount")
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bgcount
+    顯示指令輸出檔總數
+ENDHELPMSG
+				;;
+			"bgdu")
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bgdu
+    顯示每個指令輸出檔的檔案大小 (單位：KB)
+ENDHELPMSG
+				;;
+			*)
+				echo "Help message for $1 is not found"
+				;;
+		esac
+		shift
+	done
 }
 
 function help_myself () 
@@ -397,6 +511,32 @@ function help_myself ()
 
 ########## Help End ##########
 
+function split_arguments ()
+{
+	local argcount=$#
+	local -i i=0
+	local prefix_start=0
+	while [ "$1" ]
+	do
+		if [ "$prefix_start" == "0" ]
+		then
+			if [ "$1" = "--" ]
+			then
+				prefix_start=1
+				i=0
+				shift
+				continue
+			else
+				arglist[$i]="$1"
+			fi
+		else
+			prefixlist[$i]="$1"
+		fi
+		i=$i+1
+		shift
+	done
+}
+
 # Doing something
 
 startcolor
@@ -404,12 +544,16 @@ prehistory_backup
 
 umask 0022
 
+echo "Setting key binding"
+
 tty -s
 if [ "$?" = "0" ]
 then
     bind '"\e[A":history-search-backward'
 	bind '"\e[B":history-search-forward'
 fi
+
+echo "Setting shell options"
 
 shopt -s histappend
 shopt -s checkwinsize
