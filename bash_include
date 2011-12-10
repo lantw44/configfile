@@ -418,7 +418,7 @@ function help_function ()
     mkscreenacl username ...
     check_dmesg seconds
     prehistory_backup
-	check_important_files
+    check_important_files
 ENDHELPMSG
 	} && return 0
 	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
