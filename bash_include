@@ -23,6 +23,8 @@ HISTSIZE=1000000
 HISTFILESIZE=1000000
 HISTCONTROL=ignoredups:ignorespace
 
+REALPATH_PROGRAM="realpath"
+
 
 
 
@@ -320,7 +322,7 @@ function trash_mv ()
 	split_arguments "$@"
 	while [ "${arglist[$i]}" ]
 	do
-		original_path="`realpath "${arglist[$i]}"`"
+		original_path="`$REALPATH_PROGRAM "${arglist[$i]}"`"
 		current_time=`date "+%Y%m%d-%H%M%S"`
 		better_time=`date "+%Y-%m-%d %H:%M:%S"`
 		dirname="`basename "${arglist[$i]}" | sed -e 's/-/_/g' -e 's/ /_/g'`"
@@ -532,6 +534,8 @@ function check_important_files ()
 check_important_files
 startcolor
 prehistory_backup
+
+[ "`uname`" = "Linux" ] && REALPATH_PROGRAM="readlink -f"
 
 umask 0022
 
