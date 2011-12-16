@@ -5,7 +5,9 @@
 # -- UTF-8 --
 #
 
-echo "Running .bash_include"
+if tty -s; then interactive_shell=1; fi
+
+[ "$interactive_shell" ] && echo "Running .bash_include"
 
 # Internal Variables
 
@@ -636,24 +638,21 @@ function path_editor ()
 
 # Doing something
 
-check_important_files
-startcolor
-prehistory_backup
+if [ "$interactive_shell" ] 
+then
+	echo "Running interactive shell configuration"
+	check_important_files
+	startcolor
+	prehistory_backup
+    bind '"\e[A":history-search-backward'
+	bind '"\e[B":history-search-forward'
+fi
 
 [ "`uname`" = "Linux" ] && REALPATH_PROGRAM="readlink -f"
 
 umask 0022
 
-echo "Setting key binding"
-
-tty -s
-if [ "$?" = "0" ]
-then
-    bind '"\e[A":history-search-backward'
-	bind '"\e[B":history-search-forward'
-fi
-
-echo "Setting shell options"
+[ "$interactive_shell" ] && echo "Setting shell options"
 
 shopt -s histappend
 shopt -s checkwinsize
@@ -662,5 +661,5 @@ shopt -s checkhash
 shopt -s cmdhist
 shopt -s mailwarn
 
-echo "Done"
+[ "$interactive_shell" ] && echo "Done"
 
