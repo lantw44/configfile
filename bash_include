@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# This file is made by lantw44.
+# <lantw44>
 #
 # -- UTF-8 --
 #
@@ -400,14 +400,14 @@ function help_function ()
  <<< Help >>>
     help_myself [arguments ...]
     help_function [functions ...]
- <<< Group Background >>>
+ <<< Group: Background >>>
     bgrun command [arguments ...]
     bglist [--full]
     bgview [number]
     bgclean [all | numbers ...]
     bgcount
     bgdu
- <<< Group Trash >>>
+ <<< Group: Trash >>>
     trash_mv [filename ...] [-- prefix ...]
     trash_ls
     trash_cd [number]
@@ -415,18 +415,21 @@ function help_function ()
     trash_rm [all | numbers ...] [-- prefix ...]
     trash_count
     trash_du [-- prefix ...]
- <<< Group PATH Editor >>>
+ <<< Group: PATH Editor >>>
     path_editor
-    split_path
-    update_path	
+    ldpath_editor
+ x  split_path
+ x  update_path	
  <<< Other >>>
-    split_arguments [arguments ...]
     compile_all [-n] filename ...
     convert_to_html filename ...
     mkscreenacl username ...
     check_dmesg seconds
     prehistory_backup
     check_important_files
+    backup_file filename ... [-- prefix ]
+    keep_sudo_credential
+ x  split_arguments [arguments ...]
 ENDHELPMSG
 	} && return 0
 	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
@@ -634,7 +637,182 @@ function path_editor ()
 	unset patharr
 }
 
+function path_editor ()
+{
+	export current_path="$PATH"
+	local should_continue="yes"
+	local command
+	local command_sub
+	local command_sub2
+	local -i i
+	while [ "$should_continue" ]
+	do
+		split_path
+		i=0
+		while [ "${patharr[$i]}" ]
+		do
+			echo "$i: ${patharr[$i]}"
+			i=$i+1
+		done
+		read -e -p "(A)ppend/(D)elete/(E)dit/(M)ove/(R)eset/(Q)uit ? " command
+		case "$command" in
+			A|a)
+				read -e -p "Type new entry: " patharr[$i]
+				update_path
+				;;
+			D|d)
+				read -e -p "Index: " command_sub
+				patharr[$command_sub]=':'
+				update_path
+				;;
+			E|e)
+				read -e -p "Index: " command_sub
+				read -e -p "Modify this entry: " -i "${patharr[$command_sub]}" patharr[$command_sub] 
+				update_path
+				;;
+			M|m)
+				read -e -p "From: " command_sub
+				read -e -p "To: " command_sub2
+				swaptmp="${patharr[$command_sub]}"
+				patharr[$command_sub]="${patharr[$command_sub2]}"
+				patharr[$command_sub2]="$swaptmp"
+				unset swaptmp
+				update_path
+				;;
+			R|r)
+				current_path="$PATH"
+				;;
+			Q|q)
+				export PATH="$current_path"
+				echo "PATH=$PATH"
+				should_continue=''
+				;;
+			*)
+				echo " *** Unknown command *** "
+				;;
+		esac
+	done
+	unset patharr
+}
+
+function ldpath_editor ()
+{
+	export current_path="$LD_LIBRARY_PATH"
+	local should_continue="yes"
+	local command
+	local command_sub
+	local command_sub2
+	local -i i
+	while [ "$should_continue" ]
+	do
+		split_path
+		i=0
+		while [ "${patharr[$i]}" ]
+		do
+			echo "$i: ${patharr[$i]}"
+			i=$i+1
+		done
+		read -e -p "(A)ppend/(D)elete/(E)dit/(M)ove/(R)eset/(Q)uit ? " command
+		case "$command" in
+			A|a)
+				read -e -p "Type new entry: " patharr[$i]
+				update_path
+				;;
+			D|d)
+				read -e -p "Index: " command_sub
+				patharr[$command_sub]=':'
+				update_path
+				;;
+			E|e)
+				read -e -p "Index: " command_sub
+				read -e -p "Modify this entry: " -i "${patharr[$command_sub]}" patharr[$command_sub] 
+				update_path
+				;;
+			M|m)
+				read -e -p "From: " command_sub
+				read -e -p "To: " command_sub2
+				swaptmp="${patharr[$command_sub]}"
+				patharr[$command_sub]="${patharr[$command_sub2]}"
+				patharr[$command_sub2]="$swaptmp"
+				unset swaptmp
+				update_path
+				;;
+			R|r)
+				current_path="$LD_LIBRARY_PATH"
+				;;
+			Q|q)
+				export LD_LIBRARY_PATH="$current_path"
+				echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+				should_continue=''
+				;;
+			*)
+				echo " *** Unknown command *** "
+				;;
+		esac
+	done
+	unset patharr
+}
+
 ########## PATH Editor End ##########
+
+function backup_file ()
+{
+	split_arguments "$@"
+	local current_time=`date +%Y%m%d`
+	local rootfilename
+	local -i i=0
+	local -i j
+	while [ "${arglist[$i]}" ]
+	do
+		if [ '!' -f "${arglist[$i]}" ] 
+		then 
+			printf "\e[1;31mError\e[m: ${arglist[$i]} does not exist or it is not a regular file.\n"
+			i=$i+1
+			continue
+		fi
+		rootfilename="${arglist[$i]}.$current_time"
+		if [ -e "$rootfilename" ]
+		then
+			j=0
+			while [ "$j" -lt "10" ]
+			do
+				if [ -e "$rootfilename.$j" ]
+				then
+					j=$j+1
+					continue
+				else
+					"${prefixlist[@]}" \cp "${arglist[$i]}" "$rootfilename.$j"
+					break
+				fi
+			done
+			if [ '!' "$j" -lt "10" ]
+			then
+				printf "\e[1;31mError\e[m: Can not create a backup file for ${arglist[$i]}.\n"
+				printf "\e[1;33mPlease delete some backup file because I only use 0 - 9.\e[m\n"
+			fi
+		else
+			"${prefixlist[@]}" \cp "${arglist[$i]}" "$rootfilename"
+		fi
+		i=$i+1
+	done
+	unset arglist
+	unset prefixlist
+}
+
+function keep_sudo_credential ()
+{
+	if [ "$1" ]
+	then
+		update_sudo_interval="$1"
+	else
+		update_sudo_interval="60"
+	fi
+	while true
+	do
+		sudo -v
+		sleep "$update_sudo_interval"
+	done
+}
 
 # Doing something
 
