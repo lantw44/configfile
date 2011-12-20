@@ -117,6 +117,8 @@ function convert_to_html ()
 			vim $i -c 'set background=dark' \
 				-c 'highlight PreProc ctermfg=darkcyan' \
 				-c "$BEFORE_CONVERT_TO_HTML" \
+				-c "$BEFORE_CONVERT_TO_HTML1" \
+				-c "$BEFORE_CONVERT_TO_HTML2" \
 				-c TOhtml \
 				-c :w \
 				-c :qa 
@@ -408,13 +410,13 @@ function help_function ()
     bgcount
     bgdu
  <<< Group: Trash >>>
-    trash_mv [filename ...] [-- prefix ...]
+    trash_mv [filename ...] [-- sudo_prefix ...]
     trash_ls
     trash_cd [number]
-    trash_recover [number] [-- prefix ...]
-    trash_rm [all | numbers ...] [-- prefix ...]
+    trash_recover [number] [-- sudo_prefix ...]
+    trash_rm [all | numbers ...] [-- sudo_prefix ...]
     trash_count
-    trash_du [-- prefix ...]
+    trash_du [-- sudo_prefix ...]
  <<< Group: PATH Editor >>>
     path_editor
     ldpath_editor
@@ -427,8 +429,8 @@ function help_function ()
     check_dmesg seconds
     prehistory_backup
     check_important_files
-    backup_file filename ... [-- prefix ]
-    keep_sudo_credential
+    backup_file filename ... [-- sudo_prefix ]
+    keep_sudo_credential [seconds]
  x  split_arguments [arguments ...]
 ENDHELPMSG
 	} && return 0
@@ -437,6 +439,19 @@ ENDHELPMSG
 	while [ "$1" ]
 	do
 		case "$1" in
+			"help_myself")
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+help_myself
+    一個測試命令列的小函式
+ENDHELPMSG
+				;;
+			"help_function")
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+help_function
+    顯示 .bash_include 提供的額外函式清單
+    註：前方加上「x」符號者表示此為內部使用的函式，不宜直接使用
+ENDHELPMSG
+				;;
 			"bgrun")
 				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
 bgrun command [arguments ...]
