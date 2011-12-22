@@ -290,14 +290,14 @@ function check_dmesg ()
 
 function prehistory_backup ()
 {
-	echo "Backing up current history file"
+	echo "Checking current history file"
 	local currentcount=`wc "$HISTFILE" | awk '{print $1}'`
 	[ '!' -f "$historycountfile" ] && touch "$historycountfile"
 	local -i previoushistorycount
 	previoushistorycount=`cat "$historycountfile"`
 	if [ "$currentcount" -lt "$previoushistorycount" ]
 	then
-		printf "\e[1;31mWarning\e[m: Your $HISTFILE may be MODIFIED BY OTHER PROGRAMS!\n"
+		printf "\e[1;31mWarning\e[m: Your $HISTFILE may be MODIFIED OR TRUNCATED BY OTHER PROGRAMS!\n"
 		printf "Note: \e[1;33m$currentcount\e[m < $previoushistorycount\n"
 		echo "Your $historycountfile and $historybackupfile will not be overwritten until this problem is fixed."
 		echo " 1. Check your $HISTFILE."
@@ -307,6 +307,7 @@ function prehistory_backup ()
 		echo " 4. Run the command \`prehistory_backup' again."
 		return 3
 	fi
+	echo "Backing up current history file ($previoushistorycount -> $currentcount)"
 	echo "$currentcount" > "$historycountfile"
 	\cp -f "$HISTFILE" "$historybackupfile"
 }
@@ -546,7 +547,7 @@ function split_arguments ()
 
 function check_important_files ()
 {
-	IMPORTANT_FILES='.screenrc .vimrc'
+	IMPORTANT_FILES="$HOME/.screenrc $HOME/.vimrc"
 	for i in $IMPORTANT_FILES
 	do
 		[ '!' -f "$i" ] && printf "\e[1;31mWarning\e[m: \e[1;33m$i\e[m does not exist.\n"
@@ -557,7 +558,7 @@ function check_important_files ()
 
 function split_path () 
 {
-	local fifoname="$HOME/`uuidgen`"
+	local fifoname="$HOME/tmp/`uuidgen`"
 	mkfifo "$fifoname"
 	local -i i=0
 	local oneline
@@ -570,7 +571,6 @@ function split_path ()
 	done
 	exec 3<&-
 	unlink "$fifoname"
-	echo $oneline
 }
 
 function update_path ()
@@ -831,6 +831,8 @@ function keep_sudo_credential ()
 
 # Doing something
 
+umask 0022
+
 if [ "$interactive_shell" ] 
 then
 	echo "Running interactive shell configuration"
@@ -841,9 +843,11 @@ then
 	bind '"\e[B":history-search-forward'
 fi
 
-[ "`uname`" = "Linux" ] && REALPATH_PROGRAM="readlink -f"
-
-umask 0022
+if [ "`uname`" = "Linux" ]
+then
+	[ "$interactive_shell" ] && echo "Setting special things for Linux"
+	REALPATH_PROGRAM="readlink -f"
+fi
 
 [ "$interactive_shell" ] && echo "Setting shell options"
 
