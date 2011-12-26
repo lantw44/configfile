@@ -36,7 +36,7 @@ map <F6> :tabn<CR>
 map <F7> :set background=light<CR>:highlight Comment ctermfg=darkcyan<CR>
 map <F8> :set background=dark<CR>:highlight PreProc ctermfg=darkcyan<CR>
 map <F9> :call SingleCompile()<CR>
-map <F10> :echo "CFLAGS="$CFLAGS"\n"<CR>:let $CFLAGS="-Wall -pipe
+map <F10> :echo "CFLAGS="$CFLAGS"\n"<CR>:let $CFLAGS="-Wall -g -pipe
 map <F11> :echo "LDFLAGS="$LDFLAGS"\n"<CR>:let $LDFLAGS="
 map <F12> :!less -R %:p:.<CR>
 imap <F1> <ESC><F1>
