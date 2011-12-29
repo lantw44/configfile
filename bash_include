@@ -853,6 +853,7 @@ if [ "`uname`" = "Linux" ]
 then
 	[ "$interactive_shell" ] && echo "Setting special things for Linux"
 	REALPATH_PROGRAM="readlink -f"
+	ulimit -c unlimited
 fi
 
 [ "$interactive_shell" ] && echo "Setting shell options"
