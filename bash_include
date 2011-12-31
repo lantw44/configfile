@@ -189,14 +189,23 @@ function bglist ()
 				read cmdline
 				[ "$?" '!=' "0" ] && break
 				local dateandtime=`basename "$dateandtime_long"`
-				local part_year=`echo $dateandtime | cut -c 1-4`
-				local part_month=`echo $dateandtime | cut -c 5-6`
-				local part_date=`echo $dateandtime | cut -c 7-8`
-				local part_hour=`echo $dateandtime | cut -c 10-11`
-				local part_minute=`echo $dateandtime | cut -c 12-13`
-				local part_second=`echo $dateandtime | cut -c 14-15`
-				printf '%6d' "$i" 
-				echo " $part_year-$part_month-$part_date $part_hour:$part_minute:$part_second $cmdline"
+	####		local part_year=`echo $dateandtime | cut -c 1-4`
+	####		local part_month=`echo $dateandtime | cut -c 5-6`
+	####		local part_date=`echo $dateandtime | cut -c 7-8`
+	####		local part_hour=`echo $dateandtime | cut -c 10-11`
+	####		local part_minute=`echo $dateandtime | cut -c 12-13`
+	####		local part_second=`echo $dateandtime | cut -c 14-15`
+				echo "$dateandtime" | {
+					read -n 4 part_year
+					read -n 2 part_month
+					read -n 2 part_date
+					read -n 1 drop_this_char; unset drop_this_char
+					read -n 2 part_hour
+					read -n 2 part_minute
+					read -n 2 part_second
+					printf '%6d' "$i" 
+					echo " $part_year-$part_month-$part_date $part_hour:$part_minute:$part_second $cmdline"
+				}
 				i=$i+1
 			done
 		else
@@ -428,7 +437,9 @@ function help_function ()
     path_editor
     ldpath_editor
  x  split_path
+ x  split_path_core
  x  update_path	
+ x  path_editor_core
  <<< Other >>>
     compile_all [-n] filename ...
     convert_to_html filename ...
@@ -562,21 +573,23 @@ function check_important_files ()
 
 ########## PATH Editor ##########
 
+function split_path_core ()
+{
+	echo "$current_path" | {
+		while read -d : oneline
+		do
+			[ '!' "$oneline" = '^' ] && echo "$oneline"
+		done
+		[ '!' "$oneline" = '^' ] && echo "$oneline"
+	}
+	unset oneline
+}
+
 function split_path () 
 {
-	local fifoname="$HOME/tmp/`uuidgen`"
-	mkfifo "$fifoname"
-	local -i i=0
-	local oneline
-	export patharr
-	echo "$current_path" | sed -e 's/:/ /g' | xargs -n 1 echo > "$fifoname" &
-	exec 3<"$fifoname"
-	while read -u 3 patharr[$i]
-	do
-		i=$i+1
-	done
-	exec 3<&-
-	unlink "$fifoname"
+	coproc split_path_core
+	readarray -t -u ${COPROC[0]} patharr
+	wait $COPROC_PID
 }
 
 function update_path ()
@@ -586,7 +599,7 @@ function update_path ()
 	local firsttime="yes"
 	while [ "${patharr[$i]}" ]
 	do
-		if [ '!' "${patharr[$i]}" = ":" ]
+		if [ '!' "${patharr[$i]}" = "^" ]
 		then
 			if [ "$firsttime" ] 
 			then
@@ -602,123 +615,22 @@ function update_path ()
 
 function path_editor ()
 {
-	export current_path="$PATH"
-	local should_continue="yes"
-	local command
-	local command_sub
-	local command_sub2
-	local -i i
-	while [ "$should_continue" ]
-	do
-		split_path
-		i=0
-		while [ "${patharr[$i]}" ]
-		do
-			echo "$i: ${patharr[$i]}"
-			i=$i+1
-		done
-		read -e -p "(A)ppend/(D)elete/(E)dit/(M)ove/(R)eset/(Q)uit ? " command
-		case "$command" in
-			A|a)
-				read -e -p "Type new entry: " patharr[$i]
-				update_path
-				;;
-			D|d)
-				read -e -p "Line: " command_sub
-				patharr[$command_sub]=':'
-				update_path
-				;;
-			E|e)
-				read -e -p "Line: " command_sub
-				read -e -p "Modify this entry: " -i "${patharr[$command_sub]}" patharr[$command_sub] 
-				update_path
-				;;
-			M|m)
-				read -e -p "Exchange: " command_sub
-				read -e -p "With: " command_sub2
-				swaptmp="${patharr[$command_sub]}"
-				patharr[$command_sub]="${patharr[$command_sub2]}"
-				patharr[$command_sub2]="$swaptmp"
-				unset swaptmp
-				update_path
-				;;
-			R|r)
-				current_path="$PATH"
-				;;
-			Q|q)
-				PATH="$current_path"
-				echo "PATH=$PATH"
-				should_continue=''
-				;;
-			*)
-				echo " *** Unknown command *** "
-				;;
-		esac
-	done
-	unset patharr
-}
-
-function path_editor ()
-{
-	export current_path="$PATH"
-	local should_continue="yes"
-	local command
-	local command_sub
-	local command_sub2
-	local -i i
-	while [ "$should_continue" ]
-	do
-		split_path
-		i=0
-		while [ "${patharr[$i]}" ]
-		do
-			echo "$i: ${patharr[$i]}"
-			i=$i+1
-		done
-		read -e -p "(A)ppend/(D)elete/(E)dit/(M)ove/(R)eset/(Q)uit ? " command
-		case "$command" in
-			A|a)
-				read -e -p "Type new entry: " patharr[$i]
-				update_path
-				;;
-			D|d)
-				read -e -p "Index: " command_sub
-				patharr[$command_sub]=':'
-				update_path
-				;;
-			E|e)
-				read -e -p "Index: " command_sub
-				read -e -p "Modify this entry: " -i "${patharr[$command_sub]}" patharr[$command_sub] 
-				update_path
-				;;
-			M|m)
-				read -e -p "From: " command_sub
-				read -e -p "To: " command_sub2
-				swaptmp="${patharr[$command_sub]}"
-				patharr[$command_sub]="${patharr[$command_sub2]}"
-				patharr[$command_sub2]="$swaptmp"
-				unset swaptmp
-				update_path
-				;;
-			R|r)
-				current_path="$PATH"
-				;;
-			Q|q)
-				export PATH="$current_path"
-				echo "PATH=$PATH"
-				should_continue=''
-				;;
-			*)
-				echo " *** Unknown command *** "
-				;;
-		esac
-	done
-	unset patharr
+	path_editor_core
 }
 
 function ldpath_editor ()
 {
-	export current_path="$LD_LIBRARY_PATH"
+	path_editor_core ld
+}
+
+function path_editor_core ()
+{
+	if [ "$1" = "ld" ]
+	then
+		export current_path="$LD_LIBRARY_PATH"
+	else
+		export current_path="$PATH"
+	fi
 	local should_continue="yes"
 	local command
 	local command_sub
@@ -728,11 +640,13 @@ function ldpath_editor ()
 	do
 		split_path
 		i=0
+		echo "========================================"
 		while [ "${patharr[$i]}" ]
 		do
 			echo "$i: ${patharr[$i]}"
 			i=$i+1
 		done
+		echo "========================================"
 		read -e -p "(A)ppend/(D)elete/(E)dit/(M)ove/(R)eset/(Q)uit ? " command
 		case "$command" in
 			A|a)
@@ -741,7 +655,7 @@ function ldpath_editor ()
 				;;
 			D|d)
 				read -e -p "Index: " command_sub
-				patharr[$command_sub]=':'
+				patharr[$command_sub]='^'
 				update_path
 				;;
 			E|e)
@@ -759,11 +673,23 @@ function ldpath_editor ()
 				update_path
 				;;
 			R|r)
-				current_path="$LD_LIBRARY_PATH"
+				if [ "$1" = "ld" ]
+				then
+					current_path="$LD_LIBRARY_PATH"
+				else
+					current_path="$PATH"
+				fi
+				current_path="$PATH"
 				;;
-			Q|q)
-				export LD_LIBRARY_PATH="$current_path"
-				echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+			Q|q)  
+				if [ "$1" = "ld" ]
+				then
+					export LD_LIBRARY_PATH="$current_path"
+					echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+				else
+					export PATH="$current_path"
+					echo "PATH=$PATH"
+				fi
 				should_continue=''
 				;;
 			*)
@@ -772,6 +698,7 @@ function ldpath_editor ()
 		esac
 	done
 	unset patharr
+	unset current_path
 }
 
 ########## PATH Editor End ##########
