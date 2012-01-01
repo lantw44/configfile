@@ -8,10 +8,9 @@
 if tty -s; then interactive_shell=1; fi
 
 [ "$interactive_shell" ] && echo "Running .bash_include"
+[ "$interactive_shell" ] && default_tty_setting=`stty -g`
 
 # Internal Variables
-
-[ "$interactive_shell" ] && default_tty_setting=`stty -g`
 
 colorprompting='\[\e[1;31m\]\!\[\e[m\] [\[\e[1;33m\]\u\[\e[m\]@\[\e[1;32m\]\h\[\e[m\] \[\e[1;36m\]\w\[\e[m\]]\$ '
 nocolorprompting='\! [\u@\h \w]\$ '
@@ -27,7 +26,7 @@ HISTCONTROL=ignoredups:ignorespace
 
 REALPATH_PROGRAM="realpath"
 
-
+CFLAGS="-Wall -pipe -g"
 
 
 # Environment Variables
@@ -87,7 +86,7 @@ function compile_all ()
 			true
 		else
 		   	printf\
-	   		'\e[1;33mWarning\e[0m: Non-existent file or not a regular file\n'
+	   		"\e[1;33mWarning\e[0m: $1 Non-existent file or not a regular file\n"
 			shift ; continue
 		fi
 		[ "$TARGETFILE" = "$1" ] && shift && continue
@@ -98,7 +97,7 @@ function compile_all ()
 			echo "[CXX] $1 -> $TARGETFILE"
 			g++ $CFLAGS "$1" $LDFLAGS -o "$TARGETFILE"
 		else
-			printf 'Unknown suffix (\e[1;33mskipped\e[0m)\n'
+			printf "$1: Unknown suffix (\e[1;33mskipped\e[0m)\n"
 		fi
 		[ "$?" '!=' "0" ] && printf\
 	   		'\e[1;31mError\e[0m while compiling file\n'
@@ -646,10 +645,11 @@ function path_editor_core ()
 			echo "$i: ${patharr[$i]}"
 			i=$i+1
 		done
+		[ "$i" = '0' ] && echo "(Empty or not declared)"
 		echo "========================================"
-		read -e -p "(A)ppend/(D)elete/(E)dit/(M)ove/(R)eset/(Q)uit ? " command
+		read -e -p "[A]ppend/(D)elete/(E)dit/(M)ove/(R)eset/(Q)uit ? " command
 		case "$command" in
-			A|a)
+			''|A|a)
 				read -e -p "Type new entry: " patharr[$i]
 				update_path
 				;;
@@ -739,7 +739,7 @@ function backup_file ()
 				printf "\e[1;33mPlease delete some backup file because I only use 0 - 9.\e[m\n"
 			fi
 		else
-			"${prefixlist[@]}" \cp "${arglist[$i]}" "$rootfilename"
+			"${prefixlist[@]}" \cp -p "${arglist[$i]}" "$rootfilename"
 		fi
 		i=$i+1
 	done
