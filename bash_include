@@ -1,14 +1,15 @@
 #!/bin/bash
 #
-# <lantw44>
+# /home/lantw44/.bash_include
 #
 # -- UTF-8 --
 #
 
-if tty -s; then interactive_shell=1; fi
+#### if tty -s; then interactive_shell=1; fi
+if [ "`echo "$-" | grep "i" `" ]; then interactive_shell=1; fi
 
 [ "$interactive_shell" ] && echo "Running .bash_include"
-[ "$interactive_shell" ] && default_tty_setting=`stty -g`
+[ "$interactive_shell" ] && default_tty_setting="`stty -g`"
 
 # Internal Variables
 
@@ -794,5 +795,11 @@ shopt -s checkhash
 shopt -s cmdhist
 shopt -s mailwarn
 
-[ "$interactive_shell" ] && echo "Done"
+[ "$interactive_shell" ] && {
+	echo "Done"
+	if [ "$UID" = "0" ] || [ "$EUID" = "0" ] 
+	then
+		printf "\nNote: You may be \e[1;32mprivileged\e[m now!\n\n"
+	fi
+}
 
