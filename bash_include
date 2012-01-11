@@ -765,6 +765,26 @@ function keep_sudo_credential ()
 	done
 }
 
+function get_memory_info ()
+{
+	if [ "`uname`" = "Linux" ]
+	then
+		local meminfoline="`free -m | \grep -i mem`"
+		local memtotal="`echo "$meminfoline" | awk '{print $2}'`"
+		local memused="`echo "$meminfoline" | awk '{print $3}'`"
+		local membuf="`echo "$meminfoline" | awk '{print $6}'`"
+		local memcache="`echo "$meminfoline" | awk '{print $7}'`"
+		local memprog=$(($memused-$membuf-$memcache))
+		echo "Memory: $memused / $memtotal MB (`printf %2d $(($memused*100/$memtotal))`%)"
+		echo "Detail:"
+		echo "    Used:    `printf %5d $memprog` MB (`printf %2d $(($memprog*100/$memtotal))`%)"
+		echo "    Buffers: `printf %5d $membuf` MB (`printf %2d $(($membuf*100/$memtotal))`%)"
+		echo "    Cached:  `printf %5d $memcache` MB (`printf %2d $(($memcache*100/$memtotal))`%)"
+	else
+		echo "Current operating system is not Linux."
+	fi
+}
+
 # Doing something
 
 umask 0022
