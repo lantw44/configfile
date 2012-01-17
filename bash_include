@@ -686,14 +686,16 @@ function path_editor_core ()
 				then
 					export LD_LIBRARY_PATH="$current_path"
 					echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+					history -s "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 				else
 					export PATH="$current_path"
 					echo "PATH=$PATH"
+					history -s "PATH=$PATH"
 				fi
 				should_continue=''
 				;;
 			*)
-				echo " *** Unknown command *** "
+				printf " \e[33m*** Unknown command ***\e[m \n"
 				;;
 		esac
 	done
@@ -730,7 +732,9 @@ function backup_file ()
 					continue
 				else
 					"${prefixlist[@]}" \cp -p "${arglist[$i]}" "$rootfilename.$j"
+					history -s "${prefixlist[@]}" \cp -p "${arglist[$i]}" "$rootfilename.$j"
 					"${prefixlist[@]}" touch -r "${arglist[$i]}" "$rootfilename.$j"
+					history -s "${prefixlist[@]}" touch -r "${arglist[$i]}" "$rootfilename.$j"
 					break
 				fi
 			done
@@ -741,7 +745,9 @@ function backup_file ()
 			fi
 		else
 			"${prefixlist[@]}" \cp -p "${arglist[$i]}" "$rootfilename"
+			history -s "${prefixlist[@]}" \cp -p "${arglist[$i]}" "$rootfilename"
 			"${prefixlist[@]}" touch -r "${arglist[$i]}" "$rootfilename"
+			history -s "${prefixlist[@]}" touch -r "${arglist[$i]}" "$rootfilename"
 		fi
 		i=$i+1
 	done
@@ -755,7 +761,7 @@ function keep_sudo_credential ()
 	then
 		update_sudo_interval="$1"
 	else
-		update_sudo_interval="60"
+		update_sudo_interval="280"
 	fi
 	while true
 	do
@@ -769,19 +775,70 @@ function get_memory_info ()
 	if [ "`uname`" = "Linux" ]
 	then
 		local meminfoline="`free -m | \grep -i mem`"
+		local swapinfoline="`free -m | \grep -i swap`"
 		local memtotal="`echo "$meminfoline" | awk '{print $2}'`"
 		local memused="`echo "$meminfoline" | awk '{print $3}'`"
 		local membuf="`echo "$meminfoline" | awk '{print $6}'`"
 		local memcache="`echo "$meminfoline" | awk '{print $7}'`"
 		local memprog=$(($memused-$membuf-$memcache))
+		local swaptotal="`echo "$swapinfoline" | awk '{print $2}'`"
+		local swapused="`echo "$swapinfoline" | awk '{print $3}'`"
 		echo "Memory: $memused / $memtotal MB (`printf %2d $(($memused*100/$memtotal))`%)"
 		echo "Detail:"
 		echo "    Used:    `printf %5d $memprog` MB (`printf %2d $(($memprog*100/$memtotal))`%)"
 		echo "    Buffers: `printf %5d $membuf` MB (`printf %2d $(($membuf*100/$memtotal))`%)"
 		echo "    Cached:  `printf %5d $memcache` MB (`printf %2d $(($memcache*100/$memtotal))`%)"
+		if [ "$swaptotal" = "0" ]
+		then
+			echo "Swap: not available"
+		else
+			echo "Swap: $swapused / $swaptotal MB (`printf %2d $(($swapused*100/$swaptotal))`%)"
+		fi
 	else
 		echo "Current operating system is not Linux."
 	fi
+}
+
+function set_console_title ()
+{
+	case "$TERM" in
+		screen)
+			printf "\033]0;"
+			echo -n "$*"
+			printf "\033\\"
+			;;
+		xterm*)
+			printf "\033]0;"
+			echo -n "$*"
+			printf "\007"
+			;;
+		*)
+			echo "Your terminal may not have the hardstatus line."
+			echo "Note: TERM=$TERM"
+			;;
+	esac
+}
+
+function mvfile ()
+{
+	while [ "$1" ] 
+	do
+		if [ '!' -e "$1" ]
+		then
+			printf "\e[33mWarning\e[m: $1 does not exist.\n"
+			shift
+			continue
+		fi
+		echo "Old name: $1"
+		read -p "New name: " -e -i "$1" new_file_name
+		if [ "$new_file_name" ] && [ "$1" != "$new_file_name" ]
+		then
+			\mv -iv "$1" "$new_file_name"
+			history -s mv -iv "$1" "$new_file_name"
+		fi
+		shift
+	done
+	unset new_file_name
 }
 
 # Doing something
@@ -796,6 +853,16 @@ then
 	prehistory_backup
     bind '"\e[A":history-search-backward'
 	bind '"\e[B":history-search-forward'
+	if [ -z "$PROMPT_COMMAND" ]; then
+	    case "$TERM" in
+		    xterm*)
+				PROMPT_COMMAND='printf "\033]0;%s@%s:%s (%s)\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}" "`date "+%H:%M:%S"`"'
+				;;
+			screen)
+				PROMPT_COMMAND='printf "\033]0;%s@%s:%s (%s)\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}" "`date "+%H:%M:%S"`"'
+				;;
+		esac
+	fi
 fi
 
 if [ "`uname`" = "Linux" ]
