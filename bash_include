@@ -330,7 +330,13 @@ function prehistory_backup ()
 ########## Trash Manager ##########
 
 alias trash_put=trash_mv
-
+alias trash_add=trash_mv
+alias trash_list=trash_ls
+alias trash_ct=trash_count
+alias trash_restore=trash_recover
+alias trash_rc=trash_recover
+alias trash_drop=trash_rm
+alias trash_clean=trash_rm
 
 function trash_mv ()
 {
@@ -350,8 +356,13 @@ function trash_mv ()
 		mkdir -p "$fulldirname"
 		echo "Move: ${arglist[$i]} -> $fulldirname"
 		"${prefixlist[@]}" mv "${arglist[$i]}" "$fulldirname"
-		echo "$better_time" > "$fulldirname/information.date"
-		echo "$original_path" > "$fulldirname/information.path"
+		if [ "$?" = "0" ]
+		then
+			echo "$better_time" > "$fulldirname/information.date"
+			echo "$original_path" > "$fulldirname/information.path"
+		else
+			rmdir "$fulldirname"
+		fi
 		i=$i+1
 		shift
 	done
@@ -366,22 +377,67 @@ function trash_rm ()
 
 function trash_ls ()
 {
-	echo cc
+	local -i i=1
+	local oneline
+	find "$trashdir" -mindepth 1 -maxdepth 1 | sort | {
+		while read oneline
+		do
+			printf "%6d %s %s\n" "$i" \
+				"`cat "$oneline/information.date"`" \
+				"`cat "$oneline/information.path"`"
+			i=$i+1
+		done
+	}
+}
+
+function trash_pushd ()
+{
+	[ -z "$1" ] && return 1
+	pushd `find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n $1p`
 }
 
 function trash_cd ()
 {
-	echo dd
+	[ -z "$1" ] && return 1
+	cd `find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n $1p`
 }
 
 function trash_recover ()
 {
-	echo yy
+	[ -z "$1" ] && return 1
+	split_arguments "$@"
+	local -i i=0
+	while [ "${arglist[$i]}" ]
+	do
+		arglist[$i]="-e ${arglist[$i]}p"
+		i=$i+1
+	done
+	find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n ${arglist[*]} | {
+		while read oneline
+		do
+			local fromfile="$oneline/`basename "$(cat "$oneline/information.path")"`"
+			local tofile="`dirname "$(cat "$oneline/information.path")"`"
+			if [ -e "`cat "$oneline/information.path"`" ]
+			then
+				echo "Destination file exists."
+				continue
+			fi
+			echo "Move: $fromfile -> $tofile"
+			"${prefixlist[@]}" mv -f "$fromfile" "$tofile"
+			if [ "$?" = "0" ]
+			then
+				echo "Remove: $oneline"
+				\rm -rf "$oneline"
+			fi
+		done
+	}
+	unset arglist
+	unset prefixlist
 }
 
 function trash_count () 
 {
-	echo zz
+	find "$trashdir" -mindepth 1 -maxdepth 1 | wc | awk '{print $2}'
 }
 
 function trash_du ()
@@ -399,142 +455,6 @@ function trash_du ()
 }
 
 ########## Trash Manager End ##########
-
-########## Help ##########
-
-alias helpf='help_function'
-alias helpm='help_myself'
-
-function print_iconv ()
-{
-	[ "$1" = "$2" ] && cat && return 0
-	iconv -f "$1" -t "$2" 
-}
-
-function help_function ()
-{
-	[ "$#" = "0" ] && {
-		cat << ENDHELPMSG
- <<< Help >>>
-    help_myself [arguments ...]
-    help_function [functions ...]
- <<< Group: Background >>>
-    bgrun command [arguments ...]
-    bglist [--full]
-    bgview [number]
-    bgclean [all | numbers ...]
-    bgcount
-    bgdu
- <<< Group: Trash >>>
-    trash_mv [filename ...] [-- sudo_prefix ...]
-    trash_ls
-    trash_cd [number]
-    trash_recover [number] [-- sudo_prefix ...]
-    trash_rm [all | numbers ...] [-- sudo_prefix ...]
-    trash_count
-    trash_du [-- sudo_prefix ...]
- <<< Group: PATH Editor >>>
-    path_editor
-    ldpath_editor
- x  split_path
- x  split_path_core
- x  update_path	
- x  path_editor_core
- <<< Other >>>
-    compile_all [-n] filename ...
-    convert_to_html filename ...
-    mkscreenacl username ...
-    check_dmesg seconds
-    prehistory_backup
-    check_important_files
-    backup_file filename ... [-- sudo_prefix ]
-    keep_sudo_credential [seconds]
- x  split_arguments [arguments ...]
-ENDHELPMSG
-	} && return 0
-	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
-	local -i i
-	while [ "$1" ]
-	do
-		case "$1" in
-			"help_myself")
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
-help_myself
-    一個測試命令列的小函式
-ENDHELPMSG
-				;;
-			"help_function")
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
-help_function
-    顯示 .bash_include 提供的額外函式清單
-    註：前方加上「x」符號者表示此為內部使用的函式，不宜直接使用
-ENDHELPMSG
-				;;
-			"bgrun")
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
-bgrun command [arguments ...]
-    執行指令 command 並將輸出導入檔案
-    註：此函式會自動以目前時間和指令名稱為檔案命名
-ENDHELPMSG
-				;;
-			"bglist")
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
-bglist [--full]
-    列出所有使用 bgrun 執行的指令
-    若加上 --full 選項，則可同時察看時間
-ENDHELPMSG
-				;;
-			"bgview")
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
-bgview [number]
-    顯示以 bgrun 執行指令的輸出，若省略 number，表示是最近一次執行的指令
-    若 number >  0，
-	    表示第 number 個指令 (此數值可由 bglist 函式取得)
-    若 number <= 0，
-	    表示第「指令總數-number」個指令 (指令總數可由 bgcount 函式取得)
-ENDHELPMSG
-				;;
-			"bgclean")
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
-bgclean [all | numbers ...]
-    bgclean all 可清除所有指令的輸出檔
-    bgclean 3 5 7 10 表示清除第 3、5、7、10 個指令輸出檔 (編號可由 bglist 取得)
-ENDHELPMSG
-				;;
-			"bgcount")
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
-bgcount
-    顯示指令輸出檔總數
-ENDHELPMSG
-				;;
-			"bgdu")
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
-bgdu
-    顯示每個指令輸出檔的檔案大小 (單位：KB)
-ENDHELPMSG
-				;;
-			*)
-				echo "Help message for $1 is not found"
-				;;
-		esac
-		shift
-	done
-}
-
-function help_myself () 
-{
-	echo "argc = $#"
-	echo "argv[0] = $0"
-	i=1
-	while [ "$1" ]
-	do
-		echo "argv[$i] = $1"
-		i=$(($i+1))
-		shift
-	done
-}
-
-########## Help End ##########
 
 function split_arguments ()
 {
@@ -841,6 +761,145 @@ function mvfile ()
 	unset new_file_name
 }
 
+########## Help ##########
+
+alias helpf='help_function'
+alias helpm='help_myself'
+
+function print_iconv ()
+{
+	[ "$1" = "$2" ] && cat && return 0
+	iconv -f "$1" -t "$2" 
+}
+
+function help_myself () 
+{
+	echo "argc = $#"
+	echo "argv[0] = $0"
+	i=1
+	while [ "$1" ]
+	do
+		echo "argv[$i] = $1"
+		i=$(($i+1))
+		shift
+	done
+}
+
+function help_function ()
+{
+	[ "$#" = "0" ] && {
+		cat << ENDHELPMSG
+ <<< Help >>>
+    help_myself [arguments ...]                            (helpm)
+    help_function [functions ...]                          (helpf)
+ <<< Group: Background >>>
+    bgrun command [arguments ...]                          (bgr)
+    bglist [--full]                                        (bgl, bgls)
+    bgview [number]                                        (bgv)
+    bgclean [all | numbers ...]                            (bgrm)
+    bgcount                                                (bgc)
+    bgdu
+ <<< Group: Trash >>>
+    trash_mv [filename ...] [-- sudo_prefix ...]      (trash_put, trash_add)
+    trash_ls                                          (trash_list)
+    trash_cd [number]
+    trash_pushd [number]
+    trash_recover [number] [-- sudo_prefix ...]       (trash_restore, trash_rc)
+    trash_rm [all | numbers ...] [-- sudo_prefix ...] (trash_drop, trash_clean)
+    trash_count                                       (trash_ct)
+    trash_du [-- sudo_prefix ...]
+ <<< Group: PATH Editor >>>
+    path_editor
+    ldpath_editor
+ x  split_path
+ x  split_path_core
+ x  update_path	
+ x  path_editor_core
+ <<< Other >>>
+    backup_file filename ... [-- sudo_prefix ]
+    check_dmesg seconds
+    check_important_files
+    compile_all [-n] filename ...
+    convert_to_html filename ...
+    keep_sudo_credential [seconds]
+    mkscreenacl username ...
+	mvfile
+    prehistory_backup
+	set_console_title
+ x  split_arguments [arguments ...]
+ENDHELPMSG
+	} && return 0
+	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
+	local -i i
+	while [ "$1" ]
+	do
+		case "$1" in
+			help_myself|helpm)
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+help_myself
+    一個測試命令列的小函式
+ENDHELPMSG
+				;;
+			help_function|helpf)
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+help_function
+    顯示 .bash_include 提供的額外函式清單
+    註：前方加上「x」符號者表示此為內部使用的函式，不宜直接使用
+ENDHELPMSG
+				;;
+			bgrun|bgr)
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bgrun command [arguments ...]
+    執行指令 command 並將輸出導入檔案
+    註：此函式會自動以目前時間和指令名稱為檔案命名
+ENDHELPMSG
+				;;
+			bglist|bgl|bgls)
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bglist [--full]
+    列出所有使用 bgrun 執行的指令
+    若加上 --full 選項，則可同時察看時間
+ENDHELPMSG
+				;;
+			bgview|bgv)
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bgview [number]
+    顯示以 bgrun 執行指令的輸出，若省略 number，表示是最近一次執行的指令
+    若 number >  0，
+	    表示第 number 個指令 (此數值可由 bglist 函式取得)
+    若 number <= 0，
+	    表示第「指令總數-number」個指令 (指令總數可由 bgcount 函式取得)
+ENDHELPMSG
+				;;
+			bgclean|bgrm)
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bgclean [all | numbers ...]
+    bgclean all 可清除所有指令的輸出檔
+    bgclean 3 5 7 10 表示清除第 3、5、7、10 個指令輸出檔 (編號可由 bglist 取得)
+ENDHELPMSG
+				;;
+			bgcount|bgc)
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bgcount
+    顯示指令輸出檔總數
+ENDHELPMSG
+				;;
+			bgdu)
+				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+bgdu
+    顯示每個指令輸出檔的檔案大小 (單位：KB)
+ENDHELPMSG
+				;;
+			*)
+				echo "Help message for $1 is not found"
+				;;
+		esac
+		shift
+	done
+}
+
+########## Help End ##########
+
 # Doing something
 
 umask 0022
@@ -853,7 +912,7 @@ then
 	prehistory_backup
     bind '"\e[A":history-search-backward'
 	bind '"\e[B":history-search-forward'
-	if [ -z "$PROMPT_COMMAND" ]; then
+	if [ -z "$PROMPT_COMMAND" ] && [ -e "$HOME/.bash_title" ]; then
 	    case "$TERM" in
 		    xterm*)
 				PROMPT_COMMAND='printf "\033]0;%s@%s:%s (%s)\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}" "`date "+%H:%M:%S"`"'
