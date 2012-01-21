@@ -815,7 +815,7 @@ function help_function ()
     trash_cd [number]
     trash_pushd [number]
     trash_recover [number] [-- sudo_prefix ...]       (trash_restore, trash_rc)
-    trash_rm [all | numbers ...] [-- sudo_prefix ...] (trash_drop, trash_clean)
+    trash_rm numbers ...                              (trash_drop, trash_clean)
     trash_count                                       (trash_ct)
     trash_du [-- sudo_prefix ...]
  <<< Group: PATH Editor >>>
