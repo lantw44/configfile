@@ -372,7 +372,17 @@ function trash_mv ()
 
 function trash_rm ()
 {
-	echo bb
+	split_arguments "$@"
+	local -i i=0
+	while [ "${arglist[$i]}" ]
+	do
+		arglist[$i]="-e ${arglist[$i]}p"
+		i=$i+1
+	done
+	trash_dirname=`find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n ${arglist[*]} `
+	echo 'Type rm -rf $trash_dirname to remove.'
+	unset arglist
+	unset prefixlist
 }
 
 function trash_ls ()
