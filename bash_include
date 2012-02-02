@@ -751,23 +751,27 @@ function set_console_title ()
 
 function mvfile ()
 {
-	while [ "$1" ] 
+	split_arguments "$@"
+	local -i i=0
+	while [ "${arglist[$i]}" ] 
 	do
-		if [ '!' -e "$1" ]
+		if [ '!' -e "${arglist[$i]}" ]
 		then
-			printf "\e[33mWarning\e[m: $1 does not exist.\n"
-			shift
+			printf "\e[33mWarning\e[m: ${arglist[$i]} does not exist.\n"
+			i=$i+1
 			continue
 		fi
-		echo "Old name: $1"
-		read -p "New name: " -e -i "$1" new_file_name
-		if [ "$new_file_name" ] && [ "$1" != "$new_file_name" ]
+		echo "Old name: ${arglist[$i]}"
+		read -p "New name: " -e -i "${arglist[$i]}" new_file_name
+		if [ "$new_file_name" ] && [ "${arglist[$i]}" != "$new_file_name" ]
 		then
-			\mv -iv "$1" "$new_file_name"
-			history -s mv -iv "$1" "$new_file_name"
+			"${prefixlist[@]}" mv -iv "${arglist[$i]}" "$new_file_name"
+			history -s "${prefixlist[@]}" mv -iv "${arglist[$i]}" "$new_file_name"
 		fi
-		shift
+		i=$i+1
 	done
+	unset arglist
+	unset prefixlist
 	unset new_file_name
 }
 
@@ -833,7 +837,7 @@ function help_function ()
     convert_to_html filename ...
     keep_sudo_credential [seconds]
     mkscreenacl username ...
-	mvfile
+	mvfile filename ... [-- sudo_prefix]
     prehistory_backup
 	set_console_title
  x  split_arguments [arguments ...]
