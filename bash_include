@@ -299,7 +299,7 @@ function check_dmesg ()
 
 function prehistory_backup ()
 {
-	echo "Checking current history file"
+	echo "Checking your current history file"
 	local currentcount=`wc "$HISTFILE" | awk '{print $1}'`
 	[ '!' -f "$historycountfile" ] && touch "$historycountfile"
 	local -i previoushistorycount
@@ -316,7 +316,7 @@ function prehistory_backup ()
 		echo " 4. Run the command \`prehistory_backup' again."
 		return 3
 	fi
-	echo -n "Backing up current history file ($previoushistorycount -> $currentcount, "
+	echo -n "Backing up your current history file ($previoushistorycount -> $currentcount, "
 	if [ "$previoushistorycount" = "$currentcount" ]
 	then
 		echo "no modification)"
