@@ -397,7 +397,7 @@ function trash_ls ()
 				"`cat "$oneline/information.path"`"
 			i=$i+1
 		done
-	}
+	} | $PAGER
 }
 
 function trash_pushd ()
