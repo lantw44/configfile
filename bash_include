@@ -154,6 +154,7 @@ function bgrun ()
 {
 	[ "$#" = "0" ] && return 1
 	[ '!' -d "$bgrunfiledir" ] && mkdir -p "$bgrunfiledir"
+#	[ '!' -d "$bgrunfiledir/pid" ] && mkdir -p "$bgrunfiledir/pid"
 	local current_time=`date "+%Y%m%d-%H%M%S"`
 	local cmdname=`echo "$1" | sed -e 's/-/_/g' -e 's/\\//_/g' -e 's/ /_/g'`
 	if [ "`echo "$cmdname" | cut -c 1`" == "_" ]
@@ -162,22 +163,37 @@ function bgrun ()
 	fi
 	local filename="$bgrunfiledir/$current_time-$cmdname"
 	echo "Writing to $filename"
-	echo "$@" > $filename
-	"$@" &>> "$filename" &
+	{
+		echo -n "$BASHPID " > "$filename"
+		echo "$@" >> "$filename"
+		exec "$@" &>> "$filename" 
+	} &
 }
 
 function bglist ()
 {
 	local viewtime=0
 	[ "$1" = "--full" ] && viewtime=1
+	if [ "$viewtime" = "1" ]
+	then
+		echo " INDEX         TIME          PID   COMMAND"
+	else
+		echo " INDEX    PID   COMMAND"
+	fi
 	{
 		for i in `find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort`
 		do
-			[ "$viewtime" == "1" ] && echo "$i"
-			head -n 1 "$i"
+			[ "$viewtime" = "1" ] && echo "$i"
+			head -n 1 "$i" | {
+				local procpid
+				local cmdline
+				read -d ' ' procpid
+				read cmdline
+				printf "(%5d) %s\n" "$procpid" "$cmdline"
+			}
 		done
 	} | {
-		if [ "$viewtime" == "1" ]
+		if [ "$viewtime" = "1" ]
 		then
 			local readstat=0
 			local -i i=1
@@ -230,14 +246,19 @@ function bgview ()
 	fi
 	echo "Your choice is $yourchoice."
 	local realfilename=`find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort | sed -n ${yourchoice}p`
-	echo "Command Line: `head -n 1 "$realfilename"`"
+	head -n 1 "$realfilename" | {
+		read -d ' ' procpid
+		read cmdline
+		echo "PID: $procpid"
+		echo "Command Line: $cmdline"
+	}
 	read -e -p "View '$realfilename' ? " confirm
 	if [ "$confirm" = "n" ] || [ "$confirm" = "N" ]
 	then
 		return 1
 	fi
 	{
-		printf "Command Line: "
+		printf "===> Process Information: "
 		cat "$realfilename"
 	} | $PAGER
 }
@@ -380,7 +401,7 @@ function trash_rm ()
 		i=$i+1
 	done
 	trash_dirname=`find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n ${arglist[*]} `
-	echo 'Type rm -rf $trash_dirname to remove.'
+	echo 'Type rm -rf $trash_dirname to remove them.'
 	unset arglist
 	unset prefixlist
 }
@@ -581,7 +602,7 @@ function path_editor_core ()
 		read -e -p "[A]ppend/(D)elete/(E)dit/(M)ove/(R)eset/(Q)uit ? " command
 		case "$command" in
 			''|A|a)
-				read -e -p "Type new entry: " patharr[$i]
+				read -e -p "Type a new entry: " patharr[$i]
 				update_path
 				;;
 			D|d)
