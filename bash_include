@@ -174,12 +174,6 @@ function bglist ()
 {
 	local viewtime=0
 	[ "$1" = "--full" ] && viewtime=1
-	if [ "$viewtime" = "1" ]
-	then
-		echo " INDEX         TIME          PID   COMMAND"
-	else
-		echo " INDEX    PID   COMMAND"
-	fi
 	{
 		for i in `find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort`
 		do
@@ -195,6 +189,7 @@ function bglist ()
 	} | {
 		if [ "$viewtime" = "1" ]
 		then
+			echo " INDEX         TIME          PID   COMMAND"
 			local readstat=0
 			local -i i=1
 			while true
@@ -225,6 +220,7 @@ function bglist ()
 				i=$i+1
 			done
 		else
+			echo " INDEX    PID   COMMAND"
 			cat -n
 		fi
 	} | $PAGER
