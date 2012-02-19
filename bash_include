@@ -6,7 +6,7 @@
 #
 
 #### if tty -s; then interactive_shell=1; fi
-if [ "`echo "$-" | grep "i" `" ]; then interactive_shell=1; fi
+if [[ "$-" == *i* ]] ; then interactive_shell=1; fi
 
 [ "$interactive_shell" ] && echo "Running .bash_include"
 [ "$interactive_shell" ] && default_tty_setting="`stty -g`"
