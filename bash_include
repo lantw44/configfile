@@ -30,6 +30,7 @@ trashdir="$HOME/trash"
 HISTSIZE=1000000
 HISTFILESIZE=1000000
 HISTCONTROL=ignoredups:ignorespace
+HISTTIMEFORMAT="%F %T "
 
 REALPATH_PROGRAM="realpath"
 
@@ -321,7 +322,7 @@ function check_dmesg ()
 function prehistory_backup ()
 {
 	echo "Checking your current history file"
-	local currentcount=`wc "$HISTFILE" | awk '{print $1}'`
+	local -i currentcount=`cat "$HISTFILE" | wc -l`
 	[ '!' -f "$historycountfile" ] && touch "$historycountfile"
 	local -i previoushistorycount
 	previoushistorycount=`cat "$historycountfile"`
@@ -772,13 +773,15 @@ function set_console_title ()
 
 function mvfile ()
 {
+	local nocheck=0
+	[ "$1" = "-n" ] && nocheck=1 && shift
 	split_arguments "$@"
 	local -i i=0
 	while [ "${arglist[$i]}" ] 
 	do
-		if [ '!' -e "${arglist[$i]}" ]
+		if [ "$nocheck" = "0" ] && [ '!' -e "${arglist[$i]}" ]
 		then
-			printf "\e[33mWarning\e[m: ${arglist[$i]} does not exist.\n"
+			printf "\e[33mWarning\e[m: ${arglist[$i]} does not exist. (Use -n to override)\n"
 			i=$i+1
 			continue
 		fi
@@ -873,7 +876,7 @@ function help_function ()
     convert_to_html filename ...
     keep_sudo_credential [seconds]
     mkscreenacl username ...
-	mvfile filename ... [-- sudo_prefix]
+	mvfile [-n] filename ... [-- sudo_prefix]
     prehistory_backup
 	set_console_title
  x  createdir_askmode dirname
