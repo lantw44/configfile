@@ -319,6 +319,36 @@ function check_dmesg ()
 	done 
 }
 
+function check_system_status ()
+{
+	[ "$#" = "0" ] && return 1
+
+	filename_mail="$MAIL"
+	filename_messages="/var/log/messages"
+	filename_audit="/var/log/audit/audit.log"
+
+	while true
+	do
+		previous_dmesg_buf="$current_dmesg_buf"
+		current_dmesg_buf="`dmesg`"
+		previous_mail_info="$current_mail_info"
+		current_mail_info="`ls -l "$filename_mail"`"
+		previous_messages_info="$current_messages_info"
+		current_messages_info="`ls -l "$filename_messages"`"
+		previous_audit_info="$current_audit_info"
+		current_audit_info="`ls -l "$filename_audit"`"
+		if [ "$first_run" = "0" ]
+		then
+			[ "$previous_dmesg_buf" '!=' "$current_dmesg_buf" ] && echo "===> The system message buffer is modified (dmesg) <==="
+			[ "$previous_mail_info" '!=' "$current_mail_info" ] && echo "===> Your mailbox $filename_mail is modified <==="
+			[ "$previous_messages_info" '!=' "$current_messages_info" ] && echo "===> $filename_messages is modified <==="
+			[ "$previous_audit_info" '!=' "$current_audit_info" ] && echo "===> $filename_audit is modified <==="
+		fi
+		sleep $1
+		first_run=0
+	done 
+}
+
 function prehistory_backup ()
 {
 	echo "Checking your current history file"
@@ -871,6 +901,7 @@ function help_function ()
  <<< Other >>>
     backup_file filename ... [-- sudo_prefix ]
     check_dmesg seconds
+    check_system_status seconds
     check_important_files
     compile_all [-n] filename ...
     convert_to_html filename ...
