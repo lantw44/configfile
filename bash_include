@@ -67,7 +67,7 @@ alias zhtw='LANG=zh_TW.UTF-8;LANGUAGE=zh_TW:zh;LC_ALL=zh_TW.UTF-8'
 alias savetty='default_tty_setting=`stty -g`'
 alias resetty='stty $default_tty_setting'
 
-
+alias vimhtml='vim -c "set ts=2" -c "set sw=2"'
 
 
 # Functions
@@ -907,9 +907,9 @@ function help_function ()
     convert_to_html filename ...
     keep_sudo_credential [seconds]
     mkscreenacl username ...
-	mvfile [-n] filename ... [-- sudo_prefix]
+    mvfile [-n] filename ... [-- sudo_prefix]
     prehistory_backup
-	set_console_title
+    set_console_title
  x  createdir_askmode dirname
  x  split_arguments [arguments ...]
 ENDHELPMSG
