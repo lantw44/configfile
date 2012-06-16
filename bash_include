@@ -107,7 +107,7 @@ function compile_all ()
 			printf "$1: Unknown suffix (\e[1;33mskipped\e[0m)\n"
 		fi
 		[ "$?" '!=' "0" ] && printf\
-	   		'\e[1;31mError\e[0m while compiling file\n'
+			'\e[1;31mError\e[0m while compiling file\n'
 		shift
 	done
 	return 0
@@ -145,6 +145,15 @@ function mkscreenacl ()
 		echo "aclchg $1 -rw \"#?\""	
 		shift
 	done
+}
+
+function get_directory_size () 
+{
+	du -s "$1" | { 
+		read -d "	" dirsize
+		echo "$dirsize"
+		read throwaway
+	} 
 }
 
 ########## Background ##########
@@ -299,7 +308,23 @@ function bgclean ()
 
 function bgdu () 
 {
-	du -a "$bgrunfiledir"
+	local -i j=1
+	{
+		echo " INDEX     SIZE   PID   COMMAND"
+		for i in `find "$bgrunfiledir" -maxdepth 1 -mindepth 1 | sort`
+		do
+			head -n 1 "$i" | {
+				local procpid
+				local cmdline
+				read -d ' ' procpid
+				read cmdline
+				printf "%6d %8d (%5d) %s\n" "$j" \
+					"`get_directory_size "$i"`" \
+					"$procpid" "$cmdline"
+			}
+			j=$j+1
+		done
+	} | $PAGER
 }
 
 ########## Background End ##########
@@ -506,12 +531,16 @@ function trash_du ()
 {
 	split_arguments "$@"
 	local oneline
+	local -i i=1
 	find "$trashdir" -maxdepth 1 -mindepth 1 | sort | {
 		while read oneline
 		do
-			echo "'$oneline'"
+			printf "%6d %8d %s\n" "$i" \
+				"`get_directory_size "$oneline"`" \
+				"`cat "$oneline/information.path"`"
+			i=$i+1
 		done
-	} | xargs -n 10 "${prefixlist[@]}" du -s
+	} | $PAGER
 	unset arglist
 	unset prefixlist
 }
@@ -912,6 +941,7 @@ function help_function ()
     set_console_title
  x  createdir_askmode dirname
  x  split_arguments [arguments ...]
+ x  get_directory_size dirname
 ENDHELPMSG
 	} && return 0
 	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
