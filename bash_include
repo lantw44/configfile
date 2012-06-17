@@ -147,13 +147,16 @@ function mkscreenacl ()
 	done
 }
 
-function get_directory_size () 
+function get_file_size () 
 {
-	du -s "$1" | { 
+	split_arguments "$@"
+	"${prefixlist[@]}" du -s "${arglist[@]}" | { 
 		read -d "	" dirsize
 		echo "$dirsize"
 		read throwaway
 	} 
+	unset arglist
+	unset prefixlist
 }
 
 ########## Background ##########
@@ -319,7 +322,7 @@ function bgdu ()
 				read -d ' ' procpid
 				read cmdline
 				printf "%6d %8d (%5d) %s\n" "$j" \
-					"`get_directory_size "$i"`" \
+					"`get_file_size "$i"`" \
 					"$procpid" "$cmdline"
 			}
 			j=$j+1
@@ -536,7 +539,7 @@ function trash_du ()
 		while read oneline
 		do
 			printf "%6d %8d %s\n" "$i" \
-				"`get_directory_size "$oneline"`" \
+				"`get_file_size "$oneline" -- "${prefixlist[@]}"`" \
 				"`cat "$oneline/information.path"`"
 			i=$i+1
 		done
@@ -941,7 +944,7 @@ function help_function ()
     set_console_title
  x  createdir_askmode dirname
  x  split_arguments [arguments ...]
- x  get_directory_size dirname
+ x  get_file_size filename [-- sudo_prefix]
 ENDHELPMSG
 	} && return 0
 	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
