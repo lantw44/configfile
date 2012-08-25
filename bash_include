@@ -4,6 +4,10 @@
 #
 # -- UTF-8 --
 #
+# 設定用外部檔案：
+#     (1) 若 .bash_title 存在且未設定自動修改視窗標題，則依照本檔案內定規則修改
+#     (2) 若 .bash_addps 存在，則第一行的的內容會加到 colorprompting 變數，第二
+#         行的內容會加到 nocolorprompting 變數
 
 #### if tty -s; then interactive_shell=1; fi
 if [[ "$-" == *i* ]] ; then interactive_shell=1; fi
@@ -13,14 +17,34 @@ if [[ "$-" == *i* ]] ; then interactive_shell=1; fi
 
 # Internal Variables
 
-colorprompting='\[\e[1;31m\]\!\[\e[m\] [\[\e[1;33m\]\u\[\e[m\]@\[\e[1;32m\]\h\[\e[m\] \[\e[1;36m\]\w\[\e[m\]]\$ '
-nocolorprompting='\! [\u@\h \w]\$ '
+colorprompting='\[\e[1;31m\]\!\[\e[m\] [\[\e[1;33m\]\u\[\e[m\]@\[\e[1;32m\]\h\[\e[m\] \[\e[1;36m\]\w\[\e[m\]]'
+nocolorprompting='\! [\u@\h \w]'
 
 if [ "$SSH_CONNECTION" ]
 then 
 	colorprompting="\[\e[1;44m\]*\[\e[m\]$colorprompting"
 	nocolorprompting="*$nocolorprompting"
 fi
+
+if [ -f "$HOME/.bash_addps" ]
+then
+	exec 3< "$HOME/.bash_addps"
+	read -u 3 -r oneline
+	colorprompting="$oneline $colorprompting"
+	read -u 3 -r oneline
+	nocolorprompting="$oneline $nocolorprompting"
+	exec 3<&-
+	unset oneline
+fi
+
+if [ "$WINDOW" ]
+then
+	colorprompting="$colorprompting<$WINDOW>"
+	nocolorprompting="$nocolorprompting<$WINDOW>"
+fi
+
+colorprompting="${colorprompting}\$ "
+nocolorprompting="${nocolorprompting}\$ "
 
 historycountfile="$HOME/.bash_history.count"
 historybackupfile="$HOME/.bash_history.bak"
