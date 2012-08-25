@@ -13,3 +13,5 @@ title bash
 deflogin off
 
 zombie ^C^R
+
+ignorecase on
