@@ -51,8 +51,8 @@ historybackupfile="$HOME/.bash_history.bak"
 bgrunfiledir="$HOME/tmp/bgrun-`whoami`"
 trashdir="$HOME/trash"
 
-HISTSIZE=1000000
-HISTFILESIZE=1000000
+HISTSIZE=2147483647
+HISTFILESIZE=2147483647
 HISTCONTROL=ignoredups:ignorespace
 HISTTIMEFORMAT="%F %T "
 
@@ -651,17 +651,17 @@ function update_path ()
 	done
 }
 
-function path_editor ()
+function old_path_editor ()
 {
-	path_editor_core
+	old_path_editor_core
 }
 
-function ldpath_editor ()
+function old_ldpath_editor ()
 {
-	path_editor_core ld
+	old_path_editor_core ld
 }
 
-function path_editor_core ()
+function old_path_editor_core ()
 {
 	if [ "$1" = "ld" ]
 	then
@@ -742,6 +742,174 @@ function path_editor_core ()
 }
 
 ########## PATH Editor End ##########
+
+########## New PATH Editor ##########
+
+function ldpath_editor ()
+{
+	path_editor LD_LIBRARY_PATH
+}
+
+function newpath_init ()
+{
+	unset newpath
+	local pathsp="$pathorgval"
+	local pathentry
+	local -i i
+	eval pathsp='"${pathsp// /\\}"'
+	pathsp="${pathsp//:/ }"
+	i=0
+	for pathentry in $pathsp
+	do
+		newpath[$i]="${pathentry//\\/ }"
+		i=$i+1
+	done
+}
+
+function newpath_gen ()
+{
+	local -i i
+	pathmodval=""
+	i=0
+	while [ "${newpath[$i]}" ]
+	do
+		if [ "$i" != 0 ]; then pathmodval+=":"; fi
+		pathmodval+="${newpath[$i]}"
+		i=$i+1
+	done
+}
+
+function path_editor ()
+{
+	local newpathvarname
+	local badcommand
+	local command
+	local command_sub
+	local command_sub2
+	local should_continue="yes"
+	local -i i
+
+	if [ -z "$1" ]
+	then
+		newpathvarname="PATH"
+	else
+		newpathvarname="$1"
+	fi
+
+	eval pathorgval=\${${newpathvarname}}
+	newpath_init
+
+	while [ "$should_continue" ]
+	do
+		i=0
+		echo -n $'\e[2J\e[0;0H'
+		if [ "$badcommand" = "yes" ]; then
+			printf " \e[33m*** Command \`$command' is unknown ***\e[m \n"
+			badcommand=""
+		fi
+		echo "        New PATH Editor for BASH        "
+		echo "========================================"
+		echo "Environment Variable: $newpathvarname"
+		echo "----------------------------------------"
+		while [ "${newpath[$i]}" ]
+		do
+			echo "$i: ${newpath[$i]}"
+			i=$i+1
+		done
+		[ "$i" = '0' ] && echo "(Empty or not declared)"
+		echo "========================================"
+		read -e -p "[A]ppend/(I)nsert/(D)elete/(E)dit/(M)ove/(S)wap/(R)eset/(Q)uit ? " command
+		case "$command" in
+			''|A|a)
+				read -e -p "Type a new entry: " newpath[$i]
+				;;
+			I|i)
+				read -e -p "Type a new entry: " command_sub
+				if [ -z "$command_sub" ]; then continue; fi
+				newpath_tmp=( "${newpath[@]}" )
+				unset newpath
+				newpath="$command_sub"
+				i=0
+				while [ "${newpath_tmp[$i]}" ]
+				do
+					newpath[$i+1]="${newpath_tmp[$i]}"
+					i=$i+1
+				done
+				unset newpath_tmp
+				;;
+			D|d)
+				read -e -p "Index: " command_sub
+				if [ -z "$command_sub" ]; then continue; fi
+				i="$command_sub"
+				i=$i+1
+				while [ "${newpath[$i]}" ]
+				do
+					newpath[$i-1]="${newpath[$i]}"
+					i=$i+1
+				done
+				unset newpath[$i-1]
+				;;
+			E|e)
+				read -e -p "Index: " command_sub
+				read -e -p "Modify this entry: " -i "${newpath[$command_sub]}" newpath[$command_sub] 
+				;;
+			M|m)
+				read -e -p "From: " command_sub
+				read -e -p "To: " command_sub2
+				if [ "$command_sub" -eq "$command_sub2" ]; then continue; fi
+				cmdsubval="${newpath[$command_sub]}"
+				if [ "$command_sub" -gt "$command_sub2" ]; then
+					i="$command_sub"
+					while [ "$i" -gt "$command_sub2" ]
+					do
+						newpath[$i]="${newpath[$i-1]}"
+						i=$i-1
+					done
+					newpath[$command_sub2]="$cmdsubval"
+				else
+					i="$command_sub"
+					while [ "$i" -lt "$command_sub2" ]
+					do
+						newpath[$i]="${newpath[$i+1]}"
+						i=$i+1
+					done
+					newpath[$command_sub2]="$cmdsubval"
+				fi
+				unset cmdsubval
+				;;
+			S|s)
+				read -e -p "First entry: " command_sub
+				read -e -p "Second entry: " command_sub2
+				swaptmp="${newpath[$command_sub]}"
+				newpath[$command_sub]="${newpath[$command_sub2]}"
+				newpath[$command_sub2]="$swaptmp"
+				unset swaptmp
+				;;
+			R|r)
+				read -e -p "Discard all changes [y/N] ? " command_sub
+				if [ "$command_sub" = "y" ]; then
+					eval pathorgval=\${${newpathvarname}}
+					newpath_init
+				fi
+				;;
+			Q|q)  
+				newpath_gen
+				eval export ${newpathvarname}=\"$pathmodval\"
+				echo "${newpathvarname}=$pathmodval"
+				history -s "${newpathvarname}=$pathmodval"
+				should_continue=''
+				;;
+			*)
+				badcommand="yes"
+				;;
+		esac
+	done
+	unset newpath
+	unset pathorgval
+	unset pathmodval
+}
+
+########## New PATH Editor End ##########
 
 function backup_file ()
 {
@@ -924,6 +1092,19 @@ function help_myself ()
 	done
 }
 
+function help_obsolete ()
+{
+	cat << ENDHELPMSG
+ @@@ Obsolete Group: PATH Editor @@@
+    old_path_editor
+    old_ldpath_editor
+ x  split_path
+ x  split_path_core
+ x  update_path	
+ x  old_path_editor_core
+ENDHELPMSG
+}
+
 function help_function ()
 {
 	[ "$#" = "0" ] && {
@@ -931,6 +1112,8 @@ function help_function ()
  <<< Help >>>
     help_myself [arguments ...]                            (helpm)
     help_function [functions ...]                          (helpf)
+    help_obsolete
+ x  print_iconv
  <<< Group: Background >>>
     bgrun command [arguments ...]                          (bgr)
     bglist [--full]                                        (bgl, bgls)
@@ -939,36 +1122,37 @@ function help_function ()
     bgcount                                                (bgc)
     bgdu
  <<< Group: Trash >>>
-    trash_mv [filename ...] [-- sudo_prefix ...]      (trash_put, trash_add)
+    trash_mv [filenames ...] [-- sudo_prefix ...]     (trash_put, trash_add)
     trash_ls                                          (trash_list)
-    trash_cd [number]
-    trash_pushd [number]
-    trash_recover [number] [-- sudo_prefix ...]       (trash_restore, trash_rc)
+    trash_cd number
+    trash_pushd number
+    trash_recover numbers ... [-- sudo_prefix ...]    (trash_restore, trash_rc)
     trash_rm numbers ...                              (trash_drop, trash_clean)
     trash_count                                       (trash_ct)
     trash_du [-- sudo_prefix ...]
- <<< Group: PATH Editor >>>
-    path_editor
+ <<< Group: New PATH Editor >>>
+    path_editor [variable]
     ldpath_editor
- x  split_path
- x  split_path_core
- x  update_path	
- x  path_editor_core
+ x  newpath_init
+ x  newpath_gen
  <<< Other >>>
     backup_file filename ... [-- sudo_prefix ]
     check_dmesg seconds
     check_system_status seconds
     check_important_files
-    compile_all [-n] filename ...
+    compile_all [-n] filenames ...
     convert_to_html filename ...
+    get_memory_info
     keep_sudo_credential [seconds]
-    mkscreenacl username ...
-    mvfile [-n] filename ... [-- sudo_prefix]
+    mkscreenacl usernames ...
+    mvfile [-n] filenames ... [-- sudo_prefix]
     prehistory_backup
     set_console_title
  x  createdir_askmode dirname
  x  split_arguments [arguments ...]
  x  get_file_size filename [-- sudo_prefix]
+
+Obsolete functions are not printed. Type \`help_obsolete' to print them. 
 ENDHELPMSG
 	} && return 0
 	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
