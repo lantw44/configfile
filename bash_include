@@ -911,6 +911,19 @@ function path_editor ()
 
 ########## New PATH Editor End ##########
 
+function varset ()
+{
+	local varoldvalue
+	local varnewvalue
+	while [ "$1" ]
+	do
+		eval varoldvalue=\${$1}
+		read -r -e -p "$1=" -i "$varoldvalue" varnewvalue
+		eval $1=\"$varnewvalue\"
+		shift
+	done
+}
+
 function backup_file ()
 {
 	split_arguments "$@"
@@ -1148,6 +1161,7 @@ function help_function ()
     mvfile [-n] filenames ... [-- sudo_prefix]
     prehistory_backup
     set_console_title
+    var_set variables ...
  x  createdir_askmode dirname
  x  split_arguments [arguments ...]
  x  get_file_size filename [-- sudo_prefix]
