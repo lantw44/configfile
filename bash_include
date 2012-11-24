@@ -924,6 +924,41 @@ function varset ()
 	done
 }
 
+function is_file_type ()
+{
+	local filename="$1"
+	local typename="$2"
+	shift 2
+	[ "`"$@" find "$filename" -maxdepth 0 -type "$typename"`" ] && return 0
+	return 1
+}
+
+function editlink ()
+{
+	local newdest
+	local orgdest
+	split_arguments "$@"
+	local -i i=0
+	while [ "${arglist[$i]}" ]
+	do
+		if is_file_type "${arglist[$i]}" "l" "${prefixlist[@]}"; then
+			orgdest="`${prefixlist[@]} readlink "${arglist[$i]}"`"
+			read -e -p "EditLink: ${arglist[$i]} -> " -i "$orgdest" newdest
+		else
+			printf "\e[1;33mWarning\e[m: ${arglist[$i]} is not a symbolic link.\n"
+			i=$i+1
+			continue
+		fi
+		if [ "$newdest" ] && [ "$newdest" '!=' "$orgdest" ]; then		
+			"${prefixlist[@]}" rm -f "${arglist[$i]}"
+			"${prefixlist[@]}" ln -sv "$newdest" "${arglist[$i]}"
+		fi
+		i=$i+1
+	done
+	unset arglist
+	unset prefixlist
+}
+
 function backup_file ()
 {
 	split_arguments "$@"
@@ -991,31 +1026,56 @@ function keep_sudo_credential ()
 
 function get_memory_info ()
 {
-	if [ "`uname`" = "Linux" ]
-	then
-		local meminfoline="`free -m | \grep -i mem`"
-		local swapinfoline="`free -m | \grep -i swap`"
-		local memtotal="`echo "$meminfoline" | awk '{print $2}'`"
-		local memused="`echo "$meminfoline" | awk '{print $3}'`"
-		local membuf="`echo "$meminfoline" | awk '{print $6}'`"
-		local memcache="`echo "$meminfoline" | awk '{print $7}'`"
-		local memprog=$(($memused-$membuf-$memcache))
-		local swaptotal="`echo "$swapinfoline" | awk '{print $2}'`"
-		local swapused="`echo "$swapinfoline" | awk '{print $3}'`"
-		echo "Memory: $memused / $memtotal MB (`printf %2d $(($memused*100/$memtotal))`%)"
-		echo "Detail:"
-		echo "    Used:    `printf %5d $memprog` MB (`printf %2d $(($memprog*100/$memtotal))`%)"
-		echo "    Buffers: `printf %5d $membuf` MB (`printf %2d $(($membuf*100/$memtotal))`%)"
-		echo "    Cached:  `printf %5d $memcache` MB (`printf %2d $(($memcache*100/$memtotal))`%)"
-		if [ "$swaptotal" = "0" ]
-		then
-			echo "Swap: not available"
-		else
-			echo "Swap: $swapused / $swaptotal MB (`printf %2d $(($swapused*100/$swaptotal))`%)"
-		fi
-	else
-		echo "Current operating system is not Linux."
-	fi
+	case "`uname`" in
+	   	"Linux")
+			local meminfoline="`free -m | \grep -i mem`"
+			local swapinfoline="`free -m | \grep -i swap`"
+			local memtotal="`echo "$meminfoline" | awk '{print $2}'`"
+			local memused="`echo "$meminfoline" | awk '{print $3}'`"
+			local membuf="`echo "$meminfoline" | awk '{print $6}'`"
+			local memcache="`echo "$meminfoline" | awk '{print $7}'`"
+			local memprog=$(($memused-$membuf-$memcache))
+			local swaptotal="`echo "$swapinfoline" | awk '{print $2}'`"
+			local swapused="`echo "$swapinfoline" | awk '{print $3}'`"
+			echo "Memory: $memused / $memtotal MB (`printf %2d $(($memused*100/$memtotal))`%)"
+			echo "Detail:"
+			echo "    Used:    `printf %5d $memprog` MB (`printf %2d $(($memprog*100/$memtotal))`%)"
+			echo "    Buffers: `printf %5d $membuf` MB (`printf %2d $(($membuf*100/$memtotal))`%)"
+			echo "    Cached:  `printf %5d $memcache` MB (`printf %2d $(($memcache*100/$memtotal))`%)"
+			if [ "$swaptotal" = "0" ]
+			then
+				echo "Swap: not available"
+			else
+				echo "Swap: $swapused / $swaptotal MB (`printf %2d $(($swapused*100/$swaptotal))`%)"
+			fi
+			;;
+		"FreeBSD")
+			local mempagesize="`sysctl -n hw.pagesize`"
+			local mempagecount="`sysctl -n hw.availpages`"
+			local memactive="`sysctl -n vm.stats.vm.v_active_count`"
+			local meminactive="`sysctl -n vm.stats.vm.v_inactive_count`"
+			local memwire="`sysctl -n vm.stats.vm.v_wire_count`"
+			local memcache="`sysctl -n vm.stats.vm.v_cache_count`"
+			local memfree="`sysctl -n vm.stats.vm.v_free_count`"
+			local swapenabled="`sysctl -n vm.swap_enabled`"
+			echo "Memory (Active):   `printf %5d $(($memactive*$mempagesize/1048576))` MB (`printf %2d $(($memactive*100/$mempagecount))`%)"
+			echo "Memory (Inactive): `printf %5d $(($meminactive*$mempagesize/1048576))` MB (`printf %2d $(($meminactive*100/$mempagecount))`%)"
+			echo "Memory (Wired):    `printf %5d $(($memwire*$mempagesize/1048576))` MB (`printf %2d $(($memwire*100/$mempagecount))`%)"
+			echo "Memory (Cache):    `printf %5d $(($memcache*$mempagesize/1048576))` MB (`printf %2d $(($memcache*100/$mempagecount))`%)"
+			echo "Memory (Free):     `printf %5d $(($memfree*$mempagesize/1048576))` MB (`printf %2d $(($memfree*100/$mempagecount))`%)"
+			echo "Total Memory:      `printf %5d $(($mempagecount*$mempagesize/1048576))` MB"
+			if [ "$swapenabled" = "1" ]; then
+				echo ""
+				echo "Swap devices:"
+				swapinfo -m
+			else
+				echo "Swap: not enabled"
+			fi
+			;;
+		*)
+			echo "Unsupported operating system."
+			;;
+	esac
 }
 
 function set_console_title ()
@@ -1149,22 +1209,24 @@ function help_function ()
  x  newpath_init
  x  newpath_gen
  <<< Other >>>
-    backup_file filename ... [-- sudo_prefix ]
+    backup_file filename ... [-- sudo_prefix ...]
     check_dmesg seconds
     check_system_status seconds
     check_important_files
     compile_all [-n] filenames ...
     convert_to_html filename ...
+    editlink filenames ... [-- sudo_prefix ...]
     get_memory_info
     keep_sudo_credential [seconds]
     mkscreenacl usernames ...
-    mvfile [-n] filenames ... [-- sudo_prefix]
+    mvfile [-n] filenames ... [-- sudo_prefix ...]
     prehistory_backup
     set_console_title
-    var_set variables ...
+    varset variables ...
  x  createdir_askmode dirname
+ x  is_file_type filename type [-- sudo_prefix ...]
+ x  get_file_size filename [-- sudo_prefix ...]
  x  split_arguments [arguments ...]
- x  get_file_size filename [-- sudo_prefix]
 
 Obsolete functions are not printed. Type \`help_obsolete' to print them. 
 ENDHELPMSG
