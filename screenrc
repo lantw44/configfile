@@ -1,4 +1,4 @@
-caption always "%{= kc}%-Lw%{= br}%n %t%{= kc}%+Lw %=%{= g}%l"
+caption always "%{= ky}%H  %{= kc}%-Lw%{= br}%n %t%{= kc}%+Lw %=%{= g}%l"
 
 vbell off
 vbellwait 0
