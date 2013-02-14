@@ -43,6 +43,12 @@ then
 	nocolorprompting="$nocolorprompting<$WINDOW>"
 fi
 
+if [ "$TMUX_PANE" ]
+then
+	colorprompting="$colorprompting$TMUX_PANE"
+	nocolorprompting="$nocolorprompting$TMUX_PANE"
+fi
+
 colorprompting="${colorprompting}\\$ "
 nocolorprompting="${nocolorprompting}\\$ "
 
@@ -1081,7 +1087,7 @@ function get_memory_info ()
 function set_console_title ()
 {
 	case "$TERM" in
-		screen)
+		screen*)
 			printf "\033]0;"
 			echo -n "$*"
 			printf "\033\\"
@@ -1319,11 +1325,13 @@ then
 		    xterm*)
 				PROMPT_COMMAND='printf "\033]0;%s@%s:%s (%s)\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}" "`date "+%H:%M:%S"`"'
 				;;
-			screen)
+			screen*)
 				PROMPT_COMMAND='printf "\033]0;%s@%s:%s (%s)\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}" "`date "+%H:%M:%S"`"'
 				;;
 		esac
 	fi
+	[ "$TERM" = xterm ] && TERM=xterm-256color
+	[ "$TERM" = screen ] && TERM=screen-256color
 fi
 
 if [ "`uname`" = "Linux" ]
