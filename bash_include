@@ -43,8 +43,8 @@ then
 	nocolorprompting="$nocolorprompting<$WINDOW>"
 fi
 
-colorprompting="${colorprompting}\$ "
-nocolorprompting="${nocolorprompting}\$ "
+colorprompting="${colorprompting}\\$ "
+nocolorprompting="${nocolorprompting}\\$ "
 
 historycountfile="$HOME/.bash_history.count"
 historybackupfile="$HOME/.bash_history.bak"
@@ -166,7 +166,7 @@ function mkscreenacl ()
 		do
 			echo "aclchg $1 +x $i"
 		done
-		echo "aclchg $1 -rw \"#?\""	
+		echo "aclchg $1 -rw \"\#?\""	
 		shift
 	done
 }
