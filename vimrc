@@ -1,6 +1,7 @@
 let $ERRFILE="/tmp/fc0edaa9-1383-11e1-8659-000c760ae4c6.err"
 let $CFLAGS="-Wall -pipe -g"
 let $LDFLAGS=""
+let g:quick_fix_window_on = 0
 set bs=2
 set ls=2
 set ts=4
@@ -9,6 +10,7 @@ set cindent
 set hls
 set ru
 set nocp
+set ve=block
 syntax on
 set background=light
 highlight Comment ctermfg=darkcyan
@@ -27,8 +29,18 @@ function! SingleCompile()
 	endif
 endfunction
 
+function! ToggleQuickFixWindow()
+	if g:quick_fix_window_on
+		cclose
+		let g:quick_fix_window_on = 0
+	else
+		copen
+		let g:quick_fix_window_on = 1
+	endif
+endfunction
+
 map <F1> :set foldmethod=syntax
-map <F2> :cl<CR>
+map <F2> :call ToggleQuickFixWindow()<CR>
 map <F3> :cp<CR>
 map <F4> :cn<CR>
 map <F5> :tabp<CR>
