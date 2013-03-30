@@ -1147,6 +1147,24 @@ function createdir_askmode ()
 	fi	
 }
 
+function get_terminal_size ()
+{
+	# ESC 7              = 儲存游標位置和屬性      
+	# ESC [r             = 啟用全螢幕捲動
+	# ESC [{row};{col}H  = 移動游標
+	# ESC 6n             = 回報目前游標位置
+	# ESC 8              = 還原游標位置和屬性
+	echo -n $'\e7\e[r\e[999;999H\e[6n\e8' 1>&2 
+	read -s -d R getsize
+   	echo $getsize | sed 's#..\([0-9]*\);\([0-9]*\)#export LINES=\1 COLUMNS=\2#'
+}
+
+function set_terminal_size ()
+{
+	eval `get_terminal_size`
+	stty cols $COLUMNS rows $LINES
+}
+
 ########## Help ##########
 
 alias helpf='help_function'
@@ -1228,10 +1246,12 @@ function help_function ()
     mvfile [-n] filenames ... [-- sudo_prefix ...]
     prehistory_backup
     set_console_title
+    set_terminal_size
     varset variables ...
  x  createdir_askmode dirname
  x  is_file_type filename type [-- sudo_prefix ...]
  x  get_file_size filename [-- sudo_prefix ...]
+ x  get_terminal_size
  x  split_arguments [arguments ...]
 
 Obsolete functions are not printed. Type \`help_obsolete' to print them. 
