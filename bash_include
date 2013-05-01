@@ -1033,7 +1033,7 @@ function keep_sudo_credential ()
 function get_memory_info ()
 {
 	case "`uname`" in
-	   	"Linux")
+	   	"Linux"|"GNU")
 			local meminfoline="`free -m | \grep -i mem`"
 			local swapinfoline="`free -m | \grep -i swap`"
 			local memtotal="`echo "$meminfoline" | awk '{print $2}'`"
