@@ -1,7 +1,10 @@
-let $ERRFILE="/tmp/fc0edaa9-1383-11e1-8659-000c760ae4c6.err"
+let $ERRFILE="/tmp/aa1ab433-b660-11e2-a69a-000c760ae4c6.err"
+let $CC="cc"
+let $CXX="c++"
 let $CFLAGS="-Wall -pipe -g"
 let $LDFLAGS=""
 let g:quick_fix_window_on = 0
+let g:plugins_enabled = 0
 set bs=2
 set ls=2
 set ts=4
@@ -19,10 +22,10 @@ highlight Search term=reverse ctermbg=4 ctermfg=7
 function! SingleCompile()
 	let file_suffix = expand("%:e")
 	if file_suffix == "c"
-		!gcc ${CFLAGS} %:p:. -o %:r ${LDFLAGS} 2>&1 | tee ${HOME}${ERRFILE}
+		!${CC} ${CFLAGS} %:p:. -o %:r ${LDFLAGS} 2>&1 | tee ${HOME}${ERRFILE}
 		cg ${HOME}${ERRFILE}
 	elseif file_suffix == "cpp"
-		!g++ ${CFLAGS} %:p:. -o %:r ${LDFLAGS} 2>&1 | tee ${HOME}${ERRFILE}
+		!${CXX} ${CFLAGS} %:p:. -o %:r ${LDFLAGS} 2>&1 | tee ${HOME}${ERRFILE}
 		cg ${HOME}${ERRFILE}
 	else
 		echo "This file has an UNKNOWN SUFFIX!"
@@ -63,6 +66,8 @@ imap <F9> <ESC><F9>
 imap <F10> <ESC><F10>
 imap <F11> <ESC><F11>
 imap <F12> <ESC><F12>
+nmap <Tab> <C-w><C-w>
+nmap <S-Tab> <C-w>W
 
 autocmd FileType python set omnifunc=pythoncomplete#Complete
 autocmd FileType javascript set omnifunc=javascriptcomplete#CompleteJS
@@ -73,3 +78,13 @@ autocmd FileType php set omnifunc=phpcomplete#CompletePHP
 autocmd FileType c set omnifunc=ccomplete#Complete
 
 set tags+=~/.vim/tags
+
+if g:plugins_enabled
+	set rtp+=~/.vim/bundle/vundle
+	set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
+	call vundle#rc()
+	Bundle 'Lokaltog/powerline'
+	Bundle 'Valloric/YouCompleteMe'
+	Bundle 'majutsushi/tagbar'
+	Bundle 'scrooloose/nerdtree'
+endif
