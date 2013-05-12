@@ -13,9 +13,11 @@ set cindent
 set hls
 set ru
 set nocp
+set tw=80
+set cc=+1
 set ve=block
-syntax on
 set background=light
+syntax on
 highlight Comment ctermfg=darkcyan
 highlight Search term=reverse ctermbg=4 ctermfg=7
 
