@@ -1165,6 +1165,12 @@ function set_terminal_size ()
 	stty cols $COLUMNS rows $LINES
 }
 
+function unzip_nomac ()
+{
+	unzip "$@" -x '__MACOSX/*' '*.DS_Store'
+	return $?
+}
+
 ########## Help ##########
 
 alias helpf='help_function'
@@ -1248,6 +1254,7 @@ function help_function ()
     set_console_title
     set_terminal_size
     varset variables ...
+	unzip_nomac filenames ...
  x  createdir_askmode dirname
  x  is_file_type filename type [-- sudo_prefix ...]
  x  get_file_size filename [-- sudo_prefix ...]

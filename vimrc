@@ -9,14 +9,15 @@ set bs=2
 set ls=2
 set ts=4
 set sw=4
-set cindent
+set cin
 set hls
 set ru
 set nocp
+set hi=100
 set tw=80
 set cc=+1
 set ve=block
-set background=light
+set bg=light
 syntax on
 highlight Comment ctermfg=darkcyan
 highlight Search term=reverse ctermbg=4 ctermfg=7
