@@ -72,13 +72,15 @@ imap <F12> <ESC><F12>
 nmap <Tab> <C-w><C-w>
 nmap <S-Tab> <C-w>W
 
-autocmd FileType python set omnifunc=pythoncomplete#Complete
-autocmd FileType javascript set omnifunc=javascriptcomplete#CompleteJS
-autocmd FileType html set omnifunc=htmlcomplete#CompleteTags
-autocmd FileType css set omnifunc=csscomplete#CompleteCSS
-autocmd FileType xml set omnifunc=xmlcomplete#CompleteTags
-autocmd FileType php set omnifunc=phpcomplete#CompletePHP
-autocmd FileType c set omnifunc=ccomplete#Complete
+au FileType python set omnifunc=pythoncomplete#Complete
+au FileType javascript set omnifunc=javascriptcomplete#CompleteJS
+au FileType html set omnifunc=htmlcomplete#CompleteTags
+au FileType css set omnifunc=csscomplete#CompleteCSS
+au FileType xml set omnifunc=xmlcomplete#CompleteTags
+au FileType php set omnifunc=phpcomplete#CompletePHP
+au FileType c set omnifunc=ccomplete#Complete
+au BufRead *.vala,*.vapi set efm=%f:%l.%c-%[%^:]%#:\ %t%[%^:]%#:\ %m
+au BufRead,BufNewFile *.vala,*.vapi setfiletype vala
 
 set tags+=~/.vim/tags
 
@@ -86,8 +88,13 @@ if g:plugins_enabled
 	set rtp+=~/.vim/bundle/vundle
 	set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
 	call vundle#rc()
+	Bundle 'gmarik/vundle'
 	Bundle 'Lokaltog/powerline'
 	Bundle 'Valloric/YouCompleteMe'
 	Bundle 'majutsushi/tagbar'
 	Bundle 'scrooloose/nerdtree'
+	Bundle 'othree/html5.vim'
+	Bundle 'tkztmk/vim-vala'
 endif
+
+"set guifont=Liberation\ Mono\ for\ Powerline\ 11
