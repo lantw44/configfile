@@ -98,6 +98,7 @@ alias savetty='default_tty_setting=`stty -g`'
 alias resetty='stty $default_tty_setting'
 
 alias vimhtml='vim -c "set ts=2" -c "set sw=2"'
+alias screen256='screen -T screen-256color'
 
 
 # Functions
@@ -1380,6 +1381,15 @@ shopt -s checkjobs
 shopt -s checkhash
 shopt -s cmdhist
 shopt -s mailwarn
+
+[ "$interactive_shell" ] && {
+	if [ "$WINDOW" ] && type screen &> /dev/null; then
+		if [[ "`screen --version`" == *4.01* ]]; then
+			echo "Setting options for GNU screen 4.1.0"
+			screen -X cjkwidth off
+		fi
+	fi
+}
 
 [ "$interactive_shell" ] && {
 	echo "Done"
