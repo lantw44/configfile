@@ -5,6 +5,7 @@ let $CFLAGS="-Wall -pipe -g"
 let $LDFLAGS=""
 let g:quick_fix_window_on = 0
 let g:plugins_enabled = 0
+let g:use_neocomplete = 0
 set bs=2
 set ls=2
 set ts=4
@@ -43,6 +44,13 @@ function! ToggleQuickFixWindow()
 		copen
 		let g:quick_fix_window_on = 1
 	endif
+endfunction
+
+function! LoadGtkSyntaxFiles()
+	for i in ['atk', 'atspi', 'cairo', 'clutter', 'dbusglib', 'evince', 'gdkpixbuf', 'gimp', 'glib', 'gnomedesktop', 'gobjectintrospection', 'gstreamer', 'gtk2', 'gtk3', 'gtkglext', 'gtksourceview', 'jsonglib', 'libgsf', 'libnotify', 'librsvg', 'libsoup', 'libunique', 'libwnck', 'pango', 'poppler', 'vte', 'xlib' ]
+	  execute 'runtime! syntax/' . i . '.vim'
+	  execute 'let ' . i . '_deprecated_errors = 1'
+	endfor
 endfunction
 
 map <F1> :set foldmethod=syntax
@@ -90,11 +98,26 @@ if g:plugins_enabled
 	call vundle#rc()
 	Bundle 'gmarik/vundle'
 	Bundle 'Lokaltog/powerline'
-	Bundle 'Valloric/YouCompleteMe'
 	Bundle 'majutsushi/tagbar'
 	Bundle 'scrooloose/nerdtree'
 	Bundle 'othree/html5.vim'
 	Bundle 'tkztmk/vim-vala'
+	Bundle 'gtk-vim-syntax'
+	if g:use_neocomplete
+		Bundle 'Shougo/neocomplete.vim'
+		Bundle 'Shougo/vimproc'
+		Bundle 'Shougo/context_filetype.vim'
+		let g:neocomplete#enable_at_startup = 1
+		let g:neocomplete#enable_auto_select = 1
+		let g:neocomplete#enable_insert_char_pre = 1
+		let g:neocomplete#enable_fuzzy_completion = 1
+		let g:neocomplete#max_list = 10
+		let g:neocomplete#data_directory = "~/tmp/neocomplete"
+	else
+		Bundle 'Valloric/YouCompleteMe'
+	endif
+	au FileType c call LoadGtkSyntaxFiles()
+	au FileType cpp call LoadGtkSyntaxFiles()
 endif
 
 if has("cscope")                                 

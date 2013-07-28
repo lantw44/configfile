@@ -922,6 +922,74 @@ function path_editor ()
 
 ########## New PATH Editor End ##########
 
+########## Configuration File ##########
+
+function configfile_fetch ()
+{
+	local mirror_list="
+		http://www.tfcis.org/~lantw44/configfile/
+		http://phantom.tfcis.org/~lantw44/mirror/forum_tfcis_org/configfile/
+		http://master.lant.com.tw/~lantw44/configfile/
+		http://www.csie.ntu.edu.tw/~b01902062/configfile/"
+	local url_append
+	local file_name
+	local file_version
+
+	if [ "$3" ]; then
+		url_append="$3"
+	else
+		url_append="Unix-like/"
+	fi
+	if [ "$1" ]; then
+		file_name="$1"
+	else
+		file_name="bash_include vimrc screenrc"
+	fi
+	if [ "$2" ]; then
+		file_version="-$2"
+	else
+		url_append="${url_append}latest/"
+	fi
+
+	for file in $file_name
+	do
+		for site in $mirror_list
+		do
+			if fetch_remote_file "$HOME/.${file}.new" \
+				"${site}${url_append}${file}${file_version}"
+			then
+				mv -vf "$HOME/.${file}.new" "$HOME/.${file}"
+				break
+			fi
+		done
+	done
+}
+
+function configfile_initial_setup ()
+{
+	cat >> ~/.bashrc << EOF
+if [ -f ~/.bash_include ]; then
+	. ~/.bash_include
+fi
+EOF
+	if [ "`uname`" = "FreeBSD" ]; then
+		cat >> ~/.bash_login << EOF
+GET_TTY_NAME=`tty | cut -c 9`
+[ "$GET_TTY_NAME" = 'v' ] && echo "Login from local virtual terminal: `tty`"
+[ "$GET_TTY_NAME" = 'p' ] && echo "Login from pseudo terminal: `tty`"
+[ "$GET_TTY_NAME" = '/' ] && echo "Login from pseudo terminal: `tty`"
+unset GET_TTY_NAME
+EOF
+	fi
+	cat >> ~/.bash_login << EOF
+if [ -f ~/.bash_include ]; then
+	. ~/.bashrc
+fi
+EOF
+}
+
+########## Configuration File End  ##########
+
 function varset ()
 {
 	local varoldvalue
@@ -1176,6 +1244,37 @@ function unzip_nomac ()
 	return $?
 }
 
+function check_command_existent ()
+{
+	which "$1" &> /dev/null
+	return $?
+}
+
+function fetch_remote_file ()
+{
+	local rval
+	printf "==> Fetch remote file \e[1;33m$2\e[m as \e[1;35m$1\e[m ...\n"
+	if check_command_existent curl; then
+		curl -f -o "$1" "$2"
+		rval=$?
+	elif check_command_existent fetch; then
+		fetch -o "$1" "$2"
+		rval=$?
+	elif check_command_existent wget; then
+		wget --progress=dot -O "$1" "$2"
+		rval=$?
+	else
+		echo "<== Sorry, I don't know how to fetch remote files on your system"
+		return 1
+	fi
+	if [ "$rval" = "0" ]; then
+		printf "<== \e[1;32mDone\e[m\n"
+	else
+		printf "<== \e[1;31mFailed\e[m\n"
+	fi
+	return $rval
+}
+
 ########## Help ##########
 
 alias helpf='help_function'
@@ -1243,6 +1342,10 @@ function help_function ()
     ldpath_editor
  x  newpath_init
  x  newpath_gen
+ <<< Group: Configuration File >>>
+    configfile_fetch [file_name_list [file_version [system_type]]]
+    configfile_initial_setup
+ x  fetch_remote_file local_file_name remote_url
  <<< Other >>>
     backup_file filename ... [-- sudo_prefix ...]
     check_dmesg seconds
