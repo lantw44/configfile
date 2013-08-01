@@ -26,6 +26,12 @@ then
 	nocolorprompting="*$nocolorprompting"
 fi
 
+if [ "$UNDER_JHBUILD" = "true" ]
+then
+	colorprompting="$colorprompting[\[\e[1;35m\]JHBuild\[\e[m\]]"
+	nocolorprompting="$nocolorprompting[JHBuild]"
+fi
+
 if [ -f "$HOME/.bash_addps" ]
 then
 	exec 3< "$HOME/.bash_addps"
