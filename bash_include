@@ -964,6 +964,8 @@ function configfile_fetch ()
 			if fetch_remote_file "$HOME/.${file}.new" \
 				"${site}${url_append}${file}${file_version}"
 			then
+				[ -e "$HOME/.${file}" ] && \
+					mv -vf "$HOME/.${file}" "$HOME/.${file}.old"
 				mv -vf "$HOME/.${file}.new" "$HOME/.${file}"
 				break
 			fi
@@ -992,6 +994,31 @@ if [ -f ~/.bash_include ]; then
 	. ~/.bashrc
 fi
 EOF
+}
+
+function fetch_remote_file ()
+{
+	local rval
+	printf "==> Fetch remote file \e[1;33m$2\e[m as \e[1;35m$1\e[m ...\n"
+	if check_command_existent curl; then
+		curl -f -o "$1" "$2"
+		rval=$?
+	elif check_command_existent fetch; then
+		fetch -o "$1" "$2"
+		rval=$?
+	elif check_command_existent wget; then
+		wget --progress=dot -O "$1" "$2"
+		rval=$?
+	else
+		echo "<== Sorry, I don't know how to fetch remote files on your system"
+		return 1
+	fi
+	if [ "$rval" = "0" ]; then
+		printf "<== \e[1;32mDone\e[m\n"
+	else
+		printf "<== \e[1;31mFailed\e[m\n"
+	fi
+	return $rval
 }
 
 ########## Configuration File End  ##########
@@ -1250,35 +1277,128 @@ function unzip_nomac ()
 	return $?
 }
 
+function gen_ms_inet_shortcut () {
+	[ "$#" != "2" ] && {
+		echo "Usage: $FUNCNAME filename url"
+	} && return 1
+
+	{
+		echo "[InternetShortcut]"
+		echo "URL=$2"
+	} > "$1"
+}
+
 function check_command_existent ()
 {
 	which "$1" &> /dev/null
 	return $?
 }
 
-function fetch_remote_file ()
-{
-	local rval
-	printf "==> Fetch remote file \e[1;33m$2\e[m as \e[1;35m$1\e[m ...\n"
-	if check_command_existent curl; then
-		curl -f -o "$1" "$2"
-		rval=$?
-	elif check_command_existent fetch; then
-		fetch -o "$1" "$2"
-		rval=$?
-	elif check_command_existent wget; then
-		wget --progress=dot -O "$1" "$2"
-		rval=$?
-	else
-		echo "<== Sorry, I don't know how to fetch remote files on your system"
-		return 1
+function rpmdu () {
+	local div_base=1
+	local div_name="KB"
+	local total=0
+	if [ "`echo "$1" | cut -c 1`" = "-" ]
+	then
+		local optname=`echo "$1" | cut -c 2-`
+		case "$optname" in
+			"k")
+				;;
+			"m")
+				div_base=1024
+				div_name=MB
+				;;
+			"g")
+				div_base=1048576
+				div_name=GB
+				;;
+			*)
+				echo "Usage: $FUNCNAME [OPTION] package_name..."
+				echo "    -k KB"
+				echo "    -m MB"
+				echo "    -g GB"
+				return 1
+				;;
+		esac
+		shift	
 	fi
-	if [ "$rval" = "0" ]; then
-		printf "<== \e[1;32mDone\e[m\n"
-	else
-		printf "<== \e[1;31mFailed\e[m\n"
+
+	while [ "$1" ]
+	do
+		rpm -ql "$1" | {
+			while read oneline
+			do
+				if [ -f "$oneline" ]
+				then
+					du -k "$oneline"
+				fi
+			done
+		} | {
+			while read -d $'\t' filesize
+			do
+				total=$((${total}+${filesize}))
+				read
+			done
+			printf "%9d %s %s\n" "$(($total/$div_base))" "$div_name" "$1"
+		}
+		
+		shift
+	done
+}
+
+function rpmsize () {
+	local div_base=1
+	local div_name="Bytes"
+	local total=0
+	local filesize
+	if [ "`echo "$1" | cut -c 1`" = "-" ]
+	then
+		optname=`echo "$1" | cut -c 2-`
+		case "$optname" in
+			"b")
+				;;
+			"k")
+				div_base=1024
+				div_name=KB
+				;;
+			"m")
+				div_base=1048576
+				div_name=MB
+				;;
+			"g")
+				div_base=1073741824
+				div_name=GB
+				;;
+			*)
+				echo "Usage: $FUNCNAME [OPTION] package_name..."
+				echo "    -b Byte"
+				echo "    -k KB"
+				echo "    -m MB"
+				echo "    -g GB"
+				return 1
+				;;
+		esac
+		shift	
 	fi
-	return $rval
+	while [ "$1" ]
+	do
+		total=0
+		filesize=`rpm -q "$1" --queryformat "%{SIZE} "`
+		for i in $filesize
+		do
+			total=$((${total}+${i}))
+		done
+		printf "%12d %s %s\n" "$(($total/$div_base))" "$div_name" "$1"
+		shift
+	done
+}
+
+function freebsd_ports_should_rebuild () {
+	reqcomp=$(ldd -f '%a %o %p\n' /usr/local/bin/* /usr/local/sbin/* \
+		2>/dev/null	| grep 'not found' | \
+		{ while read oneline; do echo ${oneline} | cut -d ' ' -f 1; done; } | uniq)
+	reqpkg=$({ for i in $reqcomp; do pkg_info -q -W $i; done } | sort | uniq)
+	echo $reqpkg
 }
 
 ########## Help ##########
@@ -1327,6 +1447,7 @@ function help_function ()
     help_function [functions ...]                          (helpf)
     help_obsolete
  x  print_iconv
+
  <<< Group: Background >>>
     bgrun command [arguments ...]                          (bgr)
     bglist [--full]                                        (bgl, bgls)
@@ -1352,24 +1473,42 @@ function help_function ()
     configfile_fetch [file_name_list [file_version [system_type]]]
     configfile_initial_setup
  x  fetch_remote_file local_file_name remote_url
- <<< Other >>>
-    backup_file filename ... [-- sudo_prefix ...]
-    check_dmesg seconds
-    check_system_status seconds
-    check_important_files
-    compile_all [-n] filenames ...
-    convert_to_html filename ...
-    editlink filenames ... [-- sudo_prefix ...]
-    get_memory_info
-    keep_sudo_credential [seconds]
-    mkscreenacl usernames ...
-    mvfile [-n] filenames ... [-- sudo_prefix ...]
-    prehistory_backup
+
+ <<< System: Terminal >>>
     set_console_title
     set_terminal_size
+ <<< System: Information >>>
+    get_memory_info
+ <<< System: Packages Management >>>
+    rpmdu [-kmg] packages ...
+    rpmsize [-bkmg] packages ...
+    freebsd_ports_should_rebuild
+ <<< System: Privileges >>>
+    keep_sudo_credential [seconds]
+
+ <<< Tools: Interactive >>>
+    compile_all [-n] filenames ...
+    editlink filenames ... [-- sudo_prefix ...]
+    mvfile [-n] filenames ... [-- sudo_prefix ...]
     varset variables ...
+ <<< Tools: Non-interactive >>>
+    backup_file filename ... [-- sudo_prefix ...]
+    convert_to_html filename ...
+    mkscreenacl usernames ...
+
+ <<< Miscellaneous: Background Jobs >>>
+    check_dmesg seconds
+    check_system_status seconds
+ <<< Miscellaneous: Compatibility >>>
+    gen_ms_inet_shortcut filename url
     unzip_nomac filenames ...
+ <<< Miscellaneous: Personal >>>
+    check_important_files
+    prehistory_backup
+
+ <<< Shared Internal Functions >>>
  x  createdir_askmode dirname
+ x  check_command_existent program
  x  is_file_type filename type [-- sudo_prefix ...]
  x  get_file_size filename [-- sudo_prefix ...]
  x  get_terminal_size
