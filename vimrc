@@ -10,6 +10,7 @@ set bs=2
 set ls=2
 set ts=4
 set sw=4
+set hid
 set cin
 set hls
 set ru
