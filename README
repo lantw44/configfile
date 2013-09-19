@@ -1,0 +1,39 @@
+bash_addps，正確的檔名是 ~/.bash_addps
+    這是搭配 bash_include 使用的檔案，用以提示目前的主機環境。
+
+bash_include，正確的檔名是 ~/.bash_include
+    這是擴充 bash 功能的函式，可以在 ~/.bashrc 或是 ~/.profile 加入以下
+    指令來載入此檔案。
+    if [ -f ~/.bash_include ]; then
+        . ~/.bash_include
+    fi
+
+screenrc，正確的檔名是 ~/.screenrc
+    主要功能是顯示狀態列以及程式結束時不關閉視窗。
+
+ssh_config，正確的檔名是 ~/.ssh/config
+    這個檔案目前已廢棄不用。
+
+vimrc，正確的檔名是 ~/.vimrc
+    可以藉由檔頭的幾個全域變數快速調整此檔案的行為，以及是否需要外掛
+    若要使用外掛程式，必須先安裝 vundle，並進入 vim 執行 :BundleInstall
+    git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle
+
+w3m_keymap，正確的檔名是 ~/.w3m/keymap
+    定義修改網頁字元編碼的按鍵。
+
+========================================================================
+
+這些設定檔的目標都是支援 Unix-like 系統，我會盡可能以可攜的方式寫下這些
+script。若沒有可攜的標準指令，我會嘗試就我所知道的環境，分別使用不同的
+指令，並自動根據目前環境選擇適合的指令。
+
+以往有支援 Windows 的 vimrc，不過因為很少使用 Windows，這檔案已經很久沒
+維護了。Windows 版的設定檔仍可在此下載：
+http://www.tfcis.org/~lantw44/configfile/Windows/
+
+以下是目前各環境與作業系統的支援與測試情形
+
+主要支援環境                GNU/Linux、FreeBSD
+幾乎可正常運作，但不常測試  Cygwin、GNU/Hurd、NetBSD、OpenBSD
+沒有測試過的環境            MinGW、Interix、Android、Mac OS X
