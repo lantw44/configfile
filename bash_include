@@ -932,44 +932,62 @@ function path_editor ()
 
 function configfile_fetch ()
 {
-	local mirror_list="
-		http://www.tfcis.org/~lantw44/configfile/
-		http://phantom.tfcis.org/~lantw44/mirror/forum_tfcis_org/configfile/
-		http://master.lant.com.tw/~lantw44/configfile/
-		http://www.csie.ntu.edu.tw/~b01902062/configfile/"
-	local url_append
-	local file_name
+	local cgit_mirror_list=(
+		"http://www.tfcis.org/~lantw44/cgit/cgit.cgi/configfile/plain"
+		"http://phantom.tfcis.org/~lantw44/cgit/cgit.cgi/configfile/plain"
+		"http://master.lant.com.tw/~lantw44/cgit/cgit.cgi/configfile/plain")
+	local github_mirror_list=(
+		"https://raw.github.com/lantw44/configfile"
+		"http://raw.github.com/lantw44/configfile")
+	local args
+	local file_url
 	local file_version
+	local completed
+	local -a file_name
+	local -i i
+	local -i j
 
-	if [ "$3" ]; then
-		url_append="$3"
-	else
-		url_append="Unix-like/"
-	fi
 	if [ "$1" ]; then
-		file_name="$1"
+		file_version="$1"
 	else
-		file_name="bash_include vimrc screenrc"
-	fi
-	if [ "$2" ]; then
-		file_version="-$2"
-	else
-		url_append="${url_append}latest/"
+		file_version="master"
 	fi
 
-	for file in $file_name
+	args=("$@")
+	for((i=2, j=0; i<=$#; i++, j++)){
+		file_name[$j]="${args[$i]}"
+	}
+
+	if [ -z "$file_name"]; then
+		file_name=("bash_include" "vimrc" "screenrc")
+	fi
+
+	for file in ${file_name[@]}
 	do
-		for site in $mirror_list
+		completed="false"
+
+		for site in ${cgit_mirror_list[@]}
 		do
-			if fetch_remote_file "$HOME/.${file}.new" \
-				"${site}${url_append}${file}${file_version}"
+			[ "$completed" = "true" ] && break
+			file_url="$site/$file?id=$file_version"
+			if fetch_and_merge "$HOME/.${file}" "$file_url"
 			then
-				[ -e "$HOME/.${file}" ] && \
-					mv -vf "$HOME/.${file}" "$HOME/.${file}.old"
-				mv -vf "$HOME/.${file}.new" "$HOME/.${file}"
+				completed="true"
 				break
 			fi
 		done
+
+		for site in ${github_mirror_list[@]}
+		do
+			[ "$completed" = "true" ] && break
+			file_url="$site/$file_version/$file"
+			if fetch_and_merge "$HOME/.${file}" "$file_url"
+			then
+				completed="true"
+				break
+			fi
+		done
+
 	done
 }
 
@@ -1019,6 +1037,66 @@ function fetch_remote_file ()
 		printf "<== \e[1;31mFailed\e[m\n"
 	fi
 	return $rval
+}
+
+function fetch_and_merge ()
+{
+	local merge_cmd
+	local merge_cmd_prog
+	local local_file="$1"
+	local remote_file="$2"
+	if fetch_remote_file "${local_file}.new" "${remote_file}"
+	then
+		if [ '!' -e "${local_file}" ]; then
+			mv -vf "${local_file}.new" "${local_file}"
+		else
+			while true
+			do
+				echo ""
+				printf "Configuration files update tool: "
+				printf "Updating \e[1;35m${local_file}\e[m\n"
+				echo ""
+				echo " Install: Install the new version"
+				echo " Keep:    Keep the old version"
+				echo " Retry:   Give up downloaded file and try the next mirror"
+				echo ""
+				echo " Diff:    View the difference between versions"
+				echo " Merge:   Merge two files by yourself"
+				echo ""
+				read -e -p "[I]nstall/(K)eep/(R)etry/(D)iff/(M)erge ? " merge_cmd
+				case "${merge_cmd}" in
+					''|I|i)
+						mv -vf "${local_file}.new" "${local_file}"
+						break
+						;;
+					K|k)
+						rm -f "${local_file}.new"
+						break
+						;;
+					R|r)
+						rm -f "${local_file}.new"
+						return 1
+						;;
+					D|d)
+						diff -u "${local_file}" "${local_file}.new" | $PAGER
+						;;
+					M|m)
+						read -e -p "Merge tool: " -i "$merge_cmd_prog" merge_cmd_prog
+						if $merge_cmd_prog "${local_file}" "${local_file}.new"; then
+							break
+						else
+							echo "Command is exited with error. Please try again."
+						fi
+						;;
+					*)
+						printf " \e[33m*** Unknown command ***\e[m \n"
+						;;
+				esac
+			done
+		fi
+		return 0
+	fi
+	return 1
 }
 
 ########## Configuration File End  ##########
@@ -1470,9 +1548,10 @@ function help_function ()
  x  newpath_init
  x  newpath_gen
  <<< Group: Configuration File >>>
-    configfile_fetch [file_name_list [file_version [system_type]]]
+    configfile_fetch [git_tag [file_name_list ...]]
     configfile_initial_setup
  x  fetch_remote_file local_file_name remote_url
+ x  fetch_and_merge local_file_name remote_url
 
  <<< System: Terminal >>>
     set_console_title
