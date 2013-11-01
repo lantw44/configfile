@@ -9,11 +9,11 @@
 #     (2) 若 .bash_addps 存在，則第一行的的內容會加到 colorprompting 變數，第二
 #         行的內容會加到 nocolorprompting 變數
 
-#### if tty -s; then interactive_shell=1; fi
 if [[ "$-" == *i* ]] ; then interactive_shell=1; fi
 
 [ "$interactive_shell" ] && echo "Running .bash_include"
 [ "$interactive_shell" ] && default_tty_setting="`stty -g`"
+
 
 # Internal Variables
 
@@ -43,6 +43,9 @@ then
 	unset oneline
 fi
 
+colorprompting="${colorprompting}"'\[\e[41;37m\]$lasterror\[\e[m\]'
+nocolorprompting="${nocolorprompting}"'$lasterror'
+
 if [ "$WINDOW" ]
 then
 	colorprompting="$colorprompting<$WINDOW>"
@@ -55,37 +58,43 @@ then
 	nocolorprompting="$nocolorprompting$TMUX_PANE"
 fi
 
-colorprompting="${colorprompting}\\$ "
-nocolorprompting="${nocolorprompting}\\$ "
+if [[ "$PROMPT_COMMAND" != "S="* ]]; then
+	if [ "$PROMPT_COMMAND" ]
+	then
+		PROMPT_COMMAND="; $PROMPT_COMMAND"
+	fi
+	PROMPT_COMMAND='S="$?"; [ "$S" != "0" ] && lasterror="($S)" || unset lasterror'"$PROMPT_COMMAND"
+fi
 
-historycountfile="$HOME/.bash_history.count"
-historybackupfile="$HOME/.bash_history.bak"
-bgrunfiledir="$HOME/tmp/bgrun-`whoami`"
-trashdir="$HOME/trash"
+colorprompting="${colorprompting}"'\$ '
+nocolorprompting="${nocolorprompting}"'\$ '
+colorsecondprompting="\[\e[36m\]-->\[\e[m\] "
+nocolorsecondprompting="--> "
 
 HISTSIZE=2147483647
 HISTFILESIZE=2147483647
 HISTCONTROL=ignoredups:ignorespace
 HISTTIMEFORMAT="%F %T "
+historycountfile="$HOME/.bash_history.count"
+historybackupfile="$HOME/.bash_history.bak"
 
-REALPATH_PROGRAM="realpath"
-
-CFLAGS="-Wall -pipe -g"
+realpath_program="realpath"
+bgrunfiledir="$HOME/tmp/bgrun-`whoami`"
+trashdir="$HOME/trash"
 
 
 # Environment Variables
 
 export EDITOR=vim
 export FCEDIT=vim
+export VISUAL=vim
 export PAGER=less
-
-
 
 
 # Aliases
 
-alias startcolor='PS1=$colorprompting'
-alias stopcolor='PS1=$nocolorprompting'
+alias startcolor='PS1=$colorprompting; PS2=$colorsecondprompting'
+alias stopcolor='PS1=$nocolorprompting; PS2=$nocolorsecondprompting'
 
 alias ll='ls -l'
 alias grep='grep --color=always'
@@ -97,14 +106,18 @@ alias less='less -RS'
 
 alias cccc='LANG=C;LANGUAGE=C;LC_ALL=C'
 alias enus='LANG=en_US.UTF-8;LANGUAGE=en_US:en;LC_ALL=en_US.UTF-8'
-alias big5='LANG=zh_TW.Big5;LANGUAGE=zh_TW:zh;LC_ALL=zh_TW.Big5'
-alias zhtw='LANG=zh_TW.UTF-8;LANGUAGE=zh_TW:zh;LC_ALL=zh_TW.UTF-8'
+alias big5='LANG=zh_TW.Big5;LANGUAGE=zh_TW:zh:en;LC_ALL=zh_TW.Big5'
+alias zhtw='LANG=zh_TW.UTF-8;LANGUAGE=zh_TW:zh:en;LC_ALL=zh_TW.UTF-8'
 
 alias savetty='default_tty_setting=`stty -g`'
 alias resetty='stty $default_tty_setting'
 
 alias vimhtml='vim -c "set ts=2" -c "set sw=2"'
 alias screen256='screen -T screen-256color'
+
+alias ndate='date +%H:%M:%S---%A---%x'
+alias npasswd="getent passwd | awk 'BEGIN {FS=\":\"} {printf \"%24s%3s%6s%6s %-28s%-18s>> %s\\n\",\$1,\$2,\$3,\$4,\$6,\$7,\$5}' | $PAGER"
+alias ngroup="getent group | awk 'BEGIN {FS=\":\"} {printf \"%24s%3s%6s >> %s\\n\",\$1,\$2,\$3,\$4}' | $PAGER"
 
 
 # Functions
@@ -258,23 +271,14 @@ function bglist ()
 				read cmdline
 				[ "$?" '!=' "0" ] && break
 				local dateandtime=`basename "$dateandtime_long"`
-	####		local part_year=`echo $dateandtime | cut -c 1-4`
-	####		local part_month=`echo $dateandtime | cut -c 5-6`
-	####		local part_date=`echo $dateandtime | cut -c 7-8`
-	####		local part_hour=`echo $dateandtime | cut -c 10-11`
-	####		local part_minute=`echo $dateandtime | cut -c 12-13`
-	####		local part_second=`echo $dateandtime | cut -c 14-15`
-				echo "$dateandtime" | {
-					read -n 4 part_year
-					read -n 2 part_month
-					read -n 2 part_date
-					read -n 1 drop_this_char; unset drop_this_char
-					read -n 2 part_hour
-					read -n 2 part_minute
-					read -n 2 part_second
-					printf '%6d' "$i"
-					echo " $part_year-$part_month-$part_date $part_hour:$part_minute:$part_second $cmdline"
-				}
+				local part_year="${dateandtime:0:4}"
+				local part_month="${dateandtime:4:2}"
+				local part_date="${dateandtime:6:2}"
+				local part_hour="${dateandtime:9:2}"
+				local part_minute="${dateandtime:11:2}"
+				local part_second="${dateandtime:13:2}"
+				printf '%6d' "$i"
+				echo " $part_year-$part_month-$part_date $part_hour:$part_minute:$part_second $cmdline"
 				i=$i+1
 			done
 		else
@@ -421,10 +425,10 @@ function check_system_status ()
 function prehistory_backup ()
 {
 	echo "Checking your current history file"
-	local -i currentcount=`cat "$HISTFILE" | wc -l`
+	local -i currentcount="`wc -l < "$HISTFILE"`"
+	currentcount="${currentcount/ */}"
 	[ '!' -f "$historycountfile" ] && touch "$historycountfile"
-	local -i previoushistorycount
-	previoushistorycount=`cat "$historycountfile"`
+	local -i previoushistorycount="$(< "$historycountfile")"
 	if [ "$currentcount" -lt "$previoushistorycount" ]
 	then
 		printf "\e[1;31mWarning\e[m: Your $HISTFILE may be TRUNCATED OR OVERWRITTEN BY OTHER PROGRAMS!\n"
@@ -442,7 +446,7 @@ function prehistory_backup ()
 	then
 		echo "no modification)"
 	else
-		echo "+$(($currentcount-$previoushistorycount)))"
+		echo "+$[$currentcount-$previoushistorycount])"
 	fi
 	echo "$currentcount" > "$historycountfile"
 	\cp -f "$HISTFILE" "$historybackupfile"
@@ -469,7 +473,7 @@ function trash_mv ()
 	split_arguments "$@"
 	while [ "${arglist[$i]}" ]
 	do
-		original_path="`"${prefixlist[@]}" $REALPATH_PROGRAM "${arglist[$i]}"`"
+		original_path="`"${prefixlist[@]}" $realpath_program "${arglist[$i]}"`"
 		current_time=`date "+%Y%m%d-%H%M%S"`
 		better_time=`date "+%Y-%m-%d %H:%M:%S"`
 		dirname="`basename "${arglist[$i]}" | sed -e 's/-/_/g' -e 's/ /_/g'`"
@@ -514,8 +518,8 @@ function trash_ls ()
 		while read oneline
 		do
 			printf "%6d %s %s\n" "$i" \
-				"`cat "$oneline/information.date"`" \
-				"`cat "$oneline/information.path"`"
+				"$(< "$oneline/information.date")" \
+				"$(< "$oneline/information.path")"
 			i=$i+1
 		done
 	} | $PAGER
@@ -546,9 +550,9 @@ function trash_recover ()
 	find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n ${arglist[*]} | {
 		while read oneline
 		do
-			local fromfile="$oneline/`basename "$(cat "$oneline/information.path")"`"
-			local tofile="`dirname "$(cat "$oneline/information.path")"`"
-			if [ -e "`cat "$oneline/information.path"`" ]
+			local fromfile="$oneline/`basename "$(< "$oneline/information.path")"`"
+			local tofile="`dirname "$(< "$oneline/information.path")"`"
+			if [ -e "$(< "$oneline/information.path")" ]
 			then
 				echo "Destination file exists."
 				continue
@@ -581,7 +585,7 @@ function trash_du ()
 		do
 			printf "%6d %8d %s\n" "$i" \
 				"`get_file_size "$oneline" -- "${prefixlist[@]}"`" \
-				"`cat "$oneline/information.path"`"
+				"$(< "$oneline/information.path")"
 			i=$i+1
 		done
 	} | $PAGER
@@ -1398,7 +1402,7 @@ function rpmdu () {
 				return 1
 				;;
 		esac
-		shift	
+		shift
 	fi
 
 	while [ "$1" ]
@@ -1419,7 +1423,7 @@ function rpmdu () {
 			done
 			printf "%9d %s %s\n" "$(($total/$div_base))" "$div_name" "$1"
 		}
-		
+
 		shift
 	done
 }
@@ -1456,7 +1460,7 @@ function rpmsize () {
 				return 1
 				;;
 		esac
-		shift	
+		shift
 	fi
 	while [ "$1" ]
 	do
@@ -1472,8 +1476,11 @@ function rpmsize () {
 }
 
 function freebsd_ports_should_rebuild () {
-	reqcomp=$(ldd -f '%a %o %p\n' /usr/local/bin/* /usr/local/sbin/* \
-		2>/dev/null	| grep 'not found' | \
+	reqcomp=$(ldd -f '%a %o %p\n' \
+		/usr/local/bin/* /usr/local/sbin/* \
+		/usr/local/lib/* /usr/local/libexec/* \
+		/usr/local/libexec/*/* \
+		2>/dev/null | grep 'not found' | \
 		{ while read oneline; do echo ${oneline} | cut -d ' ' -f 1; done; } | uniq)
 	reqpkg=$({ for i in $reqcomp; do pkg_info -q -W $i; done } | sort | uniq)
 	echo $reqpkg
@@ -1483,6 +1490,7 @@ function freebsd_ports_should_rebuild () {
 
 alias helpf='help_function'
 alias helpm='help_myself'
+alias helpa='help_aliases'
 
 function print_iconv ()
 {
@@ -1503,6 +1511,28 @@ function help_myself ()
 	done
 }
 
+function help_aliases ()
+{
+	cat << ENDHELPMSG
+ %%% Aliases: Command Prompt %%%
+    startcolor    - Enable colorful PS1 prompting
+    stopcolor     - Disable colorful PS1 prompting
+
+ %%% Aliases: Terminal %%%
+    savetty       - Save current terminal mode
+    resetty       - Reset to last saved terminal mode
+
+ %%% Aliases: Nice Format %%%
+    ndate         - Format the output of \`date'
+    npasswd       - Format the output of \`getent passwd'
+    ngroup        - Format the output of \`getent group'
+
+ %%% Aliases: Other %%%
+    vimhtml       - Start Vim and set tabstop and shiftwidth to 2
+    screen256     - Start GNU Screen and set TERM to screen-256color
+ENDHELPMSG
+}
+
 function help_obsolete ()
 {
 	cat << ENDHELPMSG
@@ -1511,7 +1541,7 @@ function help_obsolete ()
     old_ldpath_editor
  x  split_path
  x  split_path_core
- x  update_path	
+ x  update_path
  x  old_path_editor_core
 ENDHELPMSG
 }
@@ -1523,6 +1553,7 @@ function help_function ()
  <<< Help >>>
     help_myself [arguments ...]                            (helpm)
     help_function [functions ...]                          (helpf)
+    help_aliases                                           (helpa)
     help_obsolete
  x  print_iconv
 
@@ -1593,9 +1624,10 @@ function help_function ()
  x  get_terminal_size
  x  split_arguments [arguments ...]
 
+Some simple aliases are not printed. Type \`help_aliases' to print them.
 Obsolete functions are not printed. Type \`help_obsolete' to print them.
 ENDHELPMSG
-	} && return 0
+	} | $PAGER && return 0
 	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
 	local -i i
 	while [ "$1" ]
@@ -1679,13 +1711,13 @@ then
 	prehistory_backup
 	bind '"\e[A":history-search-backward'
 	bind '"\e[B":history-search-forward'
-	if [ -z "$PROMPT_COMMAND" ] && [ -e "$HOME/.bash_title" ]; then
+	if [ -e "$HOME/.bash_title" ]; then
 	    case "$TERM" in
 			xterm*)
-				PROMPT_COMMAND='printf "\033]0;%s@%s:%s (%s)\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}" "`date "+%H:%M:%S"`"'
+				PROMPT_COMMAND="$PROMPT_COMMAND"'; printf "\033]0;%s@%s:%s (%s)\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}" "`date "+%H:%M:%S"`"'
 				;;
 			screen*)
-				PROMPT_COMMAND='printf "\033]0;%s@%s:%s (%s)\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}" "`date "+%H:%M:%S"`"'
+				PROMPT_COMMAND="$PROMPT_COMMAND"'; printf "\033]0;%s@%s:%s (%s)\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/~}" "`date "+%H:%M:%S"`"'
 				;;
 		esac
 	fi
@@ -1696,8 +1728,8 @@ fi
 if [ "`uname`" = "Linux" ]
 then
 	[ "$interactive_shell" ] && echo "Setting special things for Linux"
-	REALPATH_PROGRAM="readlink -f"
-	ulimit -c unlimited
+	realpath_program="readlink -f"
+	ulimit -S -c unlimited 2> /dev/null
 fi
 
 [ "$interactive_shell" ] && echo "Setting shell options"
@@ -1708,6 +1740,15 @@ shopt -s checkjobs
 shopt -s checkhash
 shopt -s cmdhist
 shopt -s mailwarn
+
+complete -A command check_command_existent
+complete -A directory createdir_askmode
+complete -A function helpf
+complete -A function help_function
+complete -A variable varset
+complete -A variable path_editor
+complete -A user mkscreenacl
+
 
 [ "$interactive_shell" ] && {
 	if [ "$WINDOW" ] && type screen &> /dev/null; then
@@ -1725,4 +1766,3 @@ shopt -s mailwarn
 		printf "\nNote: You may be \e[1;32mprivileged\e[m now!\n\n"
 	fi
 }
-
