@@ -13,12 +13,27 @@ if [[ "$-" == *i* ]] ; then interactive_shell=1; fi
 
 [ "$interactive_shell" ] && echo "Running .bash_include"
 [ "$interactive_shell" ] && default_tty_setting="`stty -g`"
-
+[ "$interactive_shell" ] && TTY="`tty`" && \
+	if [[ "$TTY" =~ "/dev/tty"[0-9]+ ]]; then
+		tty_short="#v${TTY:8}"
+	elif [[ "$TTY" == "/dev/tty"* ]]; then
+		tty_short="#${TTY:8}"
+	elif [[ "$TTY" == "/dev/pts"* ]]; then
+		tty_short="#p${TTY:9}"
+	elif [[ "$TTY" == "/dev/pty"* ]]; then
+		tty_short="#p${TTY:9}"
+	elif [[ "$TTY" == "/dev/hvc"* ]]; then
+		tty_short="#h${TTY:8}"
+	elif [[ "$TTY" == "/dev/console" ]]; then
+		tty_short="#c${TTY:12}"
+	else
+		unset tty_short
+	fi
 
 # Internal Variables
 
-colorprompting='\[\e[1;31m\]\!\[\e[m\] [\[\e[1;33m\]\u\[\e[m\]@\[\e[1;32m\]\h\[\e[m\] \[\e[1;36m\]\w\[\e[m\]]'
-nocolorprompting='\! [\u@\h \w]'
+colorprompting='\[\e[1;31m\]\!\[\e[m\] \[\e[35m\]$tty_short\[\e[m\][\[\e[1;33m\]\u\[\e[m\]@\[\e[1;32m\]\h\[\e[m\] \[\e[1;36m\]\w\[\e[m\]]'
+nocolorprompting='\! $tty_short[\u@\h \w]'
 
 if [ "$SSH_CONNECTION" ]
 then
