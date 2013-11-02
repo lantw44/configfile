@@ -997,13 +997,13 @@ function configfile_fetch ()
 
 function configfile_initial_setup ()
 {
-	cat >> ~/.bashrc << EOF
+	cat >> ~/.bashrc << "EOF"
 if [ -f ~/.bash_include ]; then
 	. ~/.bash_include
 fi
 EOF
 	if [ "`uname`" = "FreeBSD" ]; then
-		cat >> ~/.bash_login << EOF
+		cat >> ~/.bash_login << "EOF"
 GET_TTY_NAME=`tty | cut -c 9`
 [ "$GET_TTY_NAME" = 'v' ] && echo "Login from local virtual terminal: `tty`"
 [ "$GET_TTY_NAME" = 'p' ] && echo "Login from pseudo terminal: `tty`"
@@ -1011,11 +1011,18 @@ GET_TTY_NAME=`tty | cut -c 9`
 unset GET_TTY_NAME
 EOF
 	fi
-	cat >> ~/.bash_login << EOF
-if [ -f ~/.bash_include ]; then
+	cat >> ~/.bash_login << "EOF"
+if [ -f ~/.bashrc ]; then
 	. ~/.bashrc
 fi
 EOF
+	echo "Completed. Type \`help_function' to know how to use!"
+	for i in ~/.bashrc ~/.bash_login ~/.bash_profile ~/.shrc ~/.profile
+	do
+		grep -q -e HISTSIZE -e HISTFILESIZE "$i" 2>/dev/null && \
+			echo "Warning: HISTSIZE or HISTFILESIZE is set in $i!" && \
+			echo "History file features may not work"
+	done
 }
 
 function fetch_remote_file ()
@@ -1113,7 +1120,7 @@ function varset ()
 	do
 		eval varoldvalue=\${$1}
 		read -r -e -p "$1=" -i "$varoldvalue" varnewvalue
-		eval $1=\"$varnewvalue\"
+		eval "$1"='"$varnewvalue"'
 		shift
 	done
 }
