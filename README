@@ -37,3 +37,16 @@ http://www.tfcis.org/~lantw44/configfile/Windows/
 主要支援環境                GNU/Linux、FreeBSD
 幾乎可正常運作，但不常測試  Cygwin、GNU/Hurd、NetBSD、OpenBSD
 沒有測試過的環境            MinGW、Interix、Android、Mac OS X
+
+========================================================================
+
+使用說明：
+
+這些設定檔主要以 bash script 來管理，所以以下假設使用的 shell 是 bash，
+如果不是 bash，那很多工作就得手動執行了。
+
+1. 下載 bash_include 2013/09/20 以後的版本，儲存成 ~/.bash_include。
+2. 執行 source ~/.bash_include 來載入設定檔。
+3. 執行 configfile_fetch 來下載新版的 bash_include 和其他設定檔。
+4. 執行 configfile_initial_setup 來讓 bash 自動載入 bash_include。
+5. 完成！執行 helpf 與 helpa 可以看到簡單的指令操作說明。
