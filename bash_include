@@ -93,7 +93,7 @@ HISTTIMEFORMAT="%F %T "
 historycountfile="$HOME/.bash_history.count"
 historybackupfile="$HOME/.bash_history.bak"
 
-realpath_program="realpath"
+realpath_program="readlink -f"
 bgrunfiledir="$HOME/tmp/bgrun-`whoami`"
 trashdir="$HOME/trash"
 
@@ -1047,11 +1047,14 @@ function fetch_remote_file ()
 	if check_command_existent curl; then
 		curl -f -o "$1" "$2"
 		rval=$?
+	elif check_command_existent wget; then
+		wget --progress=dot -O "$1" "$2"
+		rval=$?
 	elif check_command_existent fetch; then
 		fetch -o "$1" "$2"
 		rval=$?
-	elif check_command_existent wget; then
-		wget --progress=dot -O "$1" "$2"
+	elif check_command_existent ftp; then
+		ftp -o "$1" "$2"
 		rval=$?
 	else
 		echo "<== Sorry, I don't know how to fetch remote files on your system"
@@ -1747,14 +1750,7 @@ then
 	[ "$TERM" = screen ] && TERM=screen-256color
 fi
 
-if [ "`uname`" = "Linux" ]
-then
-	[ "$interactive_shell" ] && echo "Setting special things for Linux"
-	realpath_program="readlink -f"
-	ulimit -S -c unlimited 2> /dev/null
-fi
-
-[ "$interactive_shell" ] && echo "Setting shell options"
+[ "$interactive_shell" ] && echo "Setting shell options, completions, limits"
 
 shopt -s histappend
 shopt -s checkwinsize
@@ -1771,6 +1767,7 @@ complete -A variable varset
 complete -A variable path_editor
 complete -A user mkscreenacl
 
+ulimit -S -c unlimited 2> /dev/null
 
 [ "$interactive_shell" ] && {
 	if [ "$WINDOW" ] && type screen &> /dev/null; then
