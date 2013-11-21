@@ -141,7 +141,7 @@ function compile_all ()
 {
 	local noask=0
 	local mycc="${CC}"
-	local mycxx="${CPP}"
+	local mycxx="${CXX}"
 	[ "$1" = '' ] && echo "Which file(s) do you want to compile? " && return 1
 	[ "$1" = "-n" ] && noask=1
 	if [ "$noask" = "0" ]; then
