@@ -20,6 +20,7 @@ set tw=80
 set cc=+1
 set ve=block
 set bg=light
+let g:tex_flavor = 'tex'
 syntax on
 highlight Comment ctermfg=darkcyan
 highlight Search term=reverse ctermbg=4 ctermfg=7
@@ -47,6 +48,16 @@ function! ToggleQuickFixWindow()
 	endif
 endfunction
 
+function! ToggleBackgroundColor()
+	if &background == "light"
+		set background=dark
+		highlight PreProc ctermfg=darkcyan
+	else
+		set background=light
+		highlight Comment ctermfg=darkcyan
+	endif
+endfunction
+
 function! LoadGtkSyntaxFiles()
 	for i in ['atk', 'atspi', 'cairo', 'clutter', 'dbusglib', 'evince', 'gdkpixbuf', 'gimp', 'glib', 'gnomedesktop', 'gobjectintrospection', 'gstreamer', 'gtk2', 'gtk3', 'gtkglext', 'gtksourceview', 'jsonglib', 'libgsf', 'libnotify', 'librsvg', 'libsoup', 'libunique', 'libwnck', 'pango', 'poppler', 'vte', 'xlib' ]
 	  execute 'runtime! syntax/' . i . '.vim'
@@ -60,8 +71,8 @@ map <F3> :cp<CR>
 map <F4> :cn<CR>
 map <F5> :tabp<CR>
 map <F6> :tabn<CR>
-map <F7> :set background=light<CR>:highlight Comment ctermfg=darkcyan<CR>
-map <F8> :set background=dark<CR>:highlight PreProc ctermfg=darkcyan<CR>
+map <F7> <C-w><C-w>
+map <F8> :call ToggleBackgroundColor()<CR>
 map <F9> :call SingleCompile()<CR>
 map <F10> :echo "CFLAGS="$CFLAGS"\n"<CR>:let $CFLAGS="-Wall -g -pipe
 map <F11> :echo "LDFLAGS="$LDFLAGS"\n"<CR>:let $LDFLAGS="
@@ -78,8 +89,6 @@ imap <F9> <ESC><F9>
 imap <F10> <ESC><F10>
 imap <F11> <ESC><F11>
 imap <F12> <ESC><F12>
-nmap <Tab> <C-w><C-w>
-nmap <S-Tab> <C-w>W
 
 au FileType python set omnifunc=pythoncomplete#Complete
 au FileType javascript set omnifunc=javascriptcomplete#CompleteJS
