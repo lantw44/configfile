@@ -1,4 +1,5 @@
-let $ERRFILE="/tmp/aa1ab433-b660-11e2-a69a-000c760ae4c6.err"
+" vim: ts=4 sw=4 noet:
+let $ERRFILE="/tmp/68c8bff5-0e99-4566-aa7a-14b7882887f9.err"
 let $CC="cc"
 let $CXX="c++"
 let $CFLAGS="-Wall -pipe -g"
@@ -6,6 +7,7 @@ let $LDFLAGS=""
 let g:quick_fix_window_on = 0
 let g:plugins_enabled = 0
 let g:use_neocomplete = 0
+let g:no_patched_fonts = 1
 set bs=2
 set ls=2
 set ts=4
@@ -125,6 +127,11 @@ if g:plugins_enabled
 		let g:neocomplete#data_directory = "~/tmp/neocomplete"
 	else
 		Bundle 'Valloric/YouCompleteMe'
+	endif
+	if g:no_patched_fonts
+		let g:powerline_config_overrides = { "common": { "dividers": {
+		\	"left":  { "hard": "  ", "soft": " |" },
+		\	"right": { "hard": "  ", "soft": " |" } } } }
 	endif
 	au FileType c call LoadGtkSyntaxFiles()
 	au FileType cpp call LoadGtkSyntaxFiles()
