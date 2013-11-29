@@ -96,7 +96,7 @@ historycountfile="$HOME/.bash_history.count"
 historybackupfile="$HOME/.bash_history.bak"
 
 realpath_program="readlink -f"
-bgrunfiledir="$HOME/tmp/bgrun-`whoami`"
+bgrunfiledir="$HOME/tmp/bgrun-$USER"
 trashdir="$HOME/trash"
 
 
@@ -1084,6 +1084,9 @@ function fetch_and_merge ()
 			while true
 			do
 				echo ""
+				cmp "${local_file}" "${local_file}.new" &> /dev/null && \
+					echo "Downloaded file is the same as installed one." && \
+					break
 				printf "Configuration files update tool: "
 				printf "Updating \e[1;35m${local_file}\e[m\n"
 				echo ""
