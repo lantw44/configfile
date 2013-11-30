@@ -144,14 +144,18 @@ function compile_all ()
 	local noask=0
 	local mycc="${CC}"
 	local mycxx="${CXX}"
+	local myexe="`get_executable_extension`"
 	local newCFLAGS
+	local newCXXFLAGS
 	local newLDFLAGS
 	[ "$1" = '' ] && echo "Which file(s) do you want to compile? " && return 1
 	[ "$1" = "-n" ] && noask=1
 	if [ "$noask" = "0" ]; then
 		read -e -p "CFLAGS: " -i "$CFLAGS" newCFLAGS
+		read -e -p "CXXFLAGS: " -i "$CXXFLAGS" newCXXFLAGS
 		read -e -p "LDFLAGS: " -i "$LDFLAGS" newLDFLAGS
 		[ "$newCFLAGS" '!=' '' ] && CFLAGS=$newCFLAGS
+		[ "$newCXXFLAGS" '!=' '' ] && CXXFLAGS=$newCXXFLAGS
 		[ "$newLDFLAGS" '!=' '' ] && LDFLAGS=$newLDFLAGS
 	else
 		shift
@@ -160,8 +164,8 @@ function compile_all ()
 	[ -z "${mycxx}" ] && mycxx=c++
 	while [ "$1" '!=' '' ]
 	do
-		local targetfile="`echo "$1" | cut -d . -f 1`"
-		local suffix="`echo "$1" | cut -d . -f 2`"
+		local targetfile="`echo "$1" | sed 's|\(.*\)\..*|\1|'`$myexe"
+		local suffix="`echo "$1" | sed 's|.*\.\(.*\)|\1|'`"
 		if [ -f "$1" ]; then
 			true
 		else
@@ -177,7 +181,7 @@ function compile_all ()
 				;;
 			cpp|cxx|cc|C)
 				echo "[${mycxx}] $1 -> $targetfile"
-				${mycxx} $CFLAGS "$1" $LDFLAGS -o "$targetfile"
+				${mycxx} $CXXFLAGS "$1" $LDFLAGS -o "$targetfile"
 				;;
 			*)
 				printf "$1: Unknown suffix (\e[1;33mskipped\e[0m)\n"
@@ -1410,8 +1414,15 @@ function gen_ms_inet_shortcut () {
 
 function check_command_existent ()
 {
-	which "$1" &> /dev/null
+	type "$1" &> /dev/null
 	return $?
+}
+
+function get_executable_extension ()
+{
+	local lsloc="`command which ls`"
+	local lsalt="`echo ${lsloc}.* | cut -d ' ' -f 1`"
+	cmp "$lsloc" "$lsalt" &> /dev/null && echo ${lsalt:${#lsloc}} && return
 }
 
 function rpmdu () {
@@ -1659,6 +1670,7 @@ function help_function ()
  x  check_command_existent program
  x  is_file_type filename type [-- sudo_prefix ...]
  x  get_file_size filename [-- sudo_prefix ...]
+ x  get_executable_extension
  x  get_terminal_size
  x  split_arguments [arguments ...]
 
