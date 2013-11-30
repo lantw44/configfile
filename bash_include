@@ -20,12 +20,12 @@ if [[ "$-" == *i* ]] ; then interactive_shell=1; fi
 		tty_short="#v${TTY:8}"
 	elif [[ "$TTY" == "/dev/tty"* ]]; then
 		tty_short="#${TTY:8}"
-	elif [[ "$TTY" == "/dev/pts"* ]]; then
-		tty_short="#p${TTY:9}"
 	elif [[ "$TTY" == "/dev/pty"* ]]; then
-		tty_short="#p${TTY:9}"
+		tty_short="#p${TTY:8}"
 	elif [[ "$TTY" == "/dev/hvc"* ]]; then
 		tty_short="#h${TTY:8}"
+	elif [[ "$TTY" == "/dev/pts"* ]]; then
+		tty_short="#p${TTY:9}"
 	elif [[ "$TTY" == "/dev/console" ]]; then
 		tty_short="#c${TTY:12}"
 	else
