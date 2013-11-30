@@ -144,13 +144,15 @@ function compile_all ()
 	local noask=0
 	local mycc="${CC}"
 	local mycxx="${CXX}"
+	local newCFLAGS
+	local newLDFLAGS
 	[ "$1" = '' ] && echo "Which file(s) do you want to compile? " && return 1
 	[ "$1" = "-n" ] && noask=1
 	if [ "$noask" = "0" ]; then
-		read -e -p "CFLAGS: " -i "$CFLAGS" NEWCFLAGS
-		read -e -p "LDFLAGS: " -i "$LDFLAGS" NEWLDFLAGS
-		[ "$NEWCFLAGS" '!=' '' ] && CFLAGS=$NEWCFLAGS
-		[ "$NEWLDFLAGS" '!=' '' ] && LDFLAGS=$NEWLDFLAGS
+		read -e -p "CFLAGS: " -i "$CFLAGS" newCFLAGS
+		read -e -p "LDFLAGS: " -i "$LDFLAGS" newLDFLAGS
+		[ "$newCFLAGS" '!=' '' ] && CFLAGS=$newCFLAGS
+		[ "$newLDFLAGS" '!=' '' ] && LDFLAGS=$newLDFLAGS
 	else
 		shift
 	fi
@@ -158,26 +160,30 @@ function compile_all ()
 	[ -z "${mycxx}" ] && mycxx=c++
 	while [ "$1" '!=' '' ]
 	do
-		local TARGETFILE="`echo "$1" | cut -d . -f 1`"
-		local SUFFIX="`echo "$1" | cut -d . -f 2`"
+		local targetfile="`echo "$1" | cut -d . -f 1`"
+		local suffix="`echo "$1" | cut -d . -f 2`"
 		if [ -f "$1" ]; then
 			true
 		else
-			printf\
+			printf \
 			"\e[1;33mWarning\e[0m: $1 Non-existent file or not a regular file\n"
 			shift ; continue
 		fi
-		[ "$TARGETFILE" = "$1" ] && shift && continue
-		if [ "$SUFFIX" = "c" ]; then
-			echo "[${mycc}] $1 -> $TARGETFILE"
-			${mycc} $CFLAGS "$1" $LDFLAGS -o "$TARGETFILE"
-		elif [ "$SUFFIX" = "cpp" ]; then
-			echo "[${mycxx}] $1 -> $TARGETFILE"
-			${mycxx} $CFLAGS "$1" $LDFLAGS -o "$TARGETFILE"
-		else
-			printf "$1: Unknown suffix (\e[1;33mskipped\e[0m)\n"
-		fi
-		[ "$?" '!=' "0" ] && printf\
+		[ "$targetfile" = "$1" ] && shift && continue
+		case "$suffix" in
+			c)
+				echo "[${mycc}] $1 -> $targetfile"
+				${mycc} $CFLAGS "$1" $LDFLAGS -o "$targetfile"
+				;;
+			cpp|cxx|cc|C)
+				echo "[${mycxx}] $1 -> $targetfile"
+				${mycxx} $CFLAGS "$1" $LDFLAGS -o "$targetfile"
+				;;
+			*)
+				printf "$1: Unknown suffix (\e[1;33mskipped\e[0m)\n"
+				;;
+		esac
+		[ "$?" '!=' "0" ] && printf \
 			'\e[1;31mError\e[0m while compiling file\n'
 		shift
 	done
@@ -206,10 +212,10 @@ function convert_to_html ()
 
 function mkscreenacl ()
 {
-	PERMIT_COMMAND="select windowlist other meta detach reset hardcopy info redisplay lastmsg next prev xon xoff windows suspend help colon copy paste writebuf readbuf displays stuff attach"
+	local screen_permit_command="select windowlist other meta detach reset hardcopy info redisplay lastmsg next prev xon xoff windows suspend help colon copy paste writebuf readbuf displays stuff attach"
 	while [ "$1" '!=' '' ]
 	do
-		for i in $PERMIT_COMMAND
+		for i in $screen_permit_command
 		do
 			echo "aclchg $1 +x $i"
 		done
@@ -400,12 +406,14 @@ function check_dmesg ()
 
 	while true
 	do
-		PREVIOS_DMESG_BUF="$DMESG_BUF"
-		DMESG_BUF="`dmesg`"
-		[ "$PREVIOS_DMESG_BUF" '!=' "$DMESG_BUF" ] && [ "$FIRST_RUN" = "0" ] && echo '===> You should check the system message buffer <==='
+		cdm_previous_dmesg_buf="$cdm_current_dmesg_buf"
+		cdm_current_dmesg_buf="`dmesg`"
+		[ "$cdm_previous_dmesg_buf" '!=' "$cdm_current_dmesg_buf" ] && \
+			[ "$cdm_first_run" = "0" ] && \
+			echo '===> You should check the system message buffer <==='
 		sleep $1
 		[ "$?" '!=' "0" ] && return 1
-		FIRST_RUN=0
+		cdm_first_run=0
 	done
 }
 
@@ -640,8 +648,8 @@ function split_arguments ()
 
 function check_important_files ()
 {
-	IMPORTANT_FILES="$HOME/.screenrc $HOME/.vimrc"
-	for i in $IMPORTANT_FILES
+	important_files="$HOME/.screenrc $HOME/.vimrc"
+	for i in $important_files
 	do
 		[ '!' -f "$i" ] && printf "\e[1;31mWarning\e[m: \e[1;33m$i\e[m does not exist.\n"
 	done
@@ -1543,7 +1551,7 @@ function help_myself ()
 
 function help_aliases ()
 {
-	cat << ENDHELPMSG
+	cat << "ENDHELPMSG"
  %%% Aliases: Command Prompt %%%
     startcolor    - Enable colorful PS1 prompting
     stopcolor     - Disable colorful PS1 prompting
@@ -1553,9 +1561,9 @@ function help_aliases ()
     resetty       - Reset to last saved terminal mode
 
  %%% Aliases: Nice Format %%%
-    ndate         - Format the output of \`date'
-    npasswd       - Format the output of \`getent passwd'
-    ngroup        - Format the output of \`getent group'
+    ndate         - Format the output of `date'
+    npasswd       - Format the output of `getent passwd'
+    ngroup        - Format the output of `getent group'
 
  %%% Aliases: Other %%%
     vimhtml       - Start Vim and set tabstop and shiftwidth to 2
@@ -1565,7 +1573,7 @@ ENDHELPMSG
 
 function help_obsolete ()
 {
-	cat << ENDHELPMSG
+	cat << "ENDHELPMSG"
  @@@ Obsolete Group: PATH Editor @@@
     old_path_editor
     old_ldpath_editor
@@ -1579,7 +1587,7 @@ ENDHELPMSG
 function help_function ()
 {
 	[ "$#" = "0" ] && {
-		cat << ENDHELPMSG
+		cat << "ENDHELPMSG"
  <<< Help >>>
     help_myself [arguments ...]                            (helpm)
     help_function [functions ...]                          (helpf)
@@ -1654,8 +1662,8 @@ function help_function ()
  x  get_terminal_size
  x  split_arguments [arguments ...]
 
-Some simple aliases are not printed. Type \`help_aliases' to print them.
-Obsolete functions are not printed. Type \`help_obsolete' to print them.
+Some simple aliases are not printed. Type `help_aliases' to print them.
+Obsolete functions are not printed. Type `help_obsolete' to print them.
 ENDHELPMSG
 	} | $PAGER && return 0
 	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
@@ -1664,34 +1672,34 @@ ENDHELPMSG
 	do
 		case "$1" in
 			help_myself|helpm)
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
 help_myself
     一個測試命令列的小函式
 ENDHELPMSG
 				;;
 			help_function|helpf)
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
 help_function
     顯示 .bash_include 提供的額外函式清單
     註：前方加上「x」符號者表示此為內部使用的函式，不宜直接使用
 ENDHELPMSG
 				;;
 			bgrun|bgr)
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
 bgrun command [arguments ...]
     執行指令 command 並將輸出導入檔案
     註：此函式會自動以目前時間和指令名稱為檔案命名
 ENDHELPMSG
 				;;
 			bglist|bgl|bgls)
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
 bglist [--full]
     列出所有使用 bgrun 執行的指令
     若加上 --full 選項，則可同時察看時間
 ENDHELPMSG
 				;;
 			bgview|bgv)
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
 bgview [number]
     顯示以 bgrun 執行指令的輸出，若省略 number，表示是最近一次執行的指令
     若 number >  0，
@@ -1701,20 +1709,20 @@ bgview [number]
 ENDHELPMSG
 				;;
 			bgclean|bgrm)
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
 bgclean [all | numbers ...]
     bgclean all 可清除所有指令的輸出檔
     bgclean 3 5 7 10 表示清除第 3、5、7、10 個指令輸出檔 (編號可由 bglist 取得)
 ENDHELPMSG
 				;;
 			bgcount|bgc)
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
 bgcount
     顯示指令輸出檔總數
 ENDHELPMSG
 				;;
 			bgdu)
-				cat << ENDHELPMSG | print_iconv "UTF-8" "$current_charset"
+				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
 bgdu
     顯示每個指令輸出檔的檔案大小 (單位：KB)
 ENDHELPMSG
