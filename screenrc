@@ -1,4 +1,5 @@
 caption always "%{= ky}%H  %{= kc}%-Lw%{= br}%n %t%{= kc}%+Lw %=%{= g}%l"
+termcapinfo xterm*|rxvt*|kterm*|Eterm* 'hs:ts=\E]0;:fs=\007:ds=\E]0;\007'
 
 vbell off
 vbellwait 0
