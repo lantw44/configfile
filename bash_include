@@ -1031,7 +1031,7 @@ if [ -f ~/.bash_include ]; then
 	. ~/.bash_include
 fi
 EOF
-	if [ "`uname`" = "FreeBSD" ]; then
+	if [[ "$OSTYPE" == *freebsd* ]]; then
 		cat >> ~/.bash_login << "EOF"
 GET_TTY_NAME=`tty | cut -c 9`
 [ "$GET_TTY_NAME" = 'v' ] && echo "Login from local virtual terminal: `tty`"
@@ -1264,8 +1264,8 @@ function keep_sudo_credential ()
 
 function get_memory_info ()
 {
-	case "`uname`" in
-		"Linux"|"GNU")
+	case "$OSTYPE" in
+		*linux*|*gnu*)
 			local meminfoline="`free -m | command grep -i mem`"
 			local swapinfoline="`free -m | command grep -i swap`"
 			local memtotal="`echo "$meminfoline" | awk '{print $2}'`"
@@ -1287,7 +1287,7 @@ function get_memory_info ()
 				echo "Swap: $swapused / $swaptotal MB (`printf %2d $(($swapused*100/$swaptotal))`%)"
 			fi
 			;;
-		"FreeBSD")
+		*freebsd*)
 			local mempagesize="`sysctl -n hw.pagesize`"
 			local mempagecount="`sysctl -n hw.availpages`"
 			local memactive="`sysctl -n vm.stats.vm.v_active_count`"
