@@ -1316,6 +1316,41 @@ function get_memory_info ()
 	esac
 }
 
+function argv0 ()
+{
+	local execname="$1"
+	local argv0="$2"
+	shift 2
+	( exec -a "$argv0" "$execname" "$@" )
+}
+
+function repeat ()
+{
+	local repeat_times="$1"
+	shift
+	for ((i=0; i<repeat_times; i++))
+	do
+		"$@"
+	done
+}
+
+function wait_success ()
+{
+	local i=1
+	until "$@"; do echo "Failed ... $i"; ((i++)) ; done
+}
+
+function fbterm_chewing ()
+{
+	if [ -z "$1" ]; then
+		fbterm -s 14 -- uim-fep -u chewing
+	else
+		local font_size="$1"
+		shift
+		fbterm -s "$font_size" "$@" -- uim-fep -u chewing
+	fi
+}
+
 function set_console_title ()
 {
 	case "$TERM" in
@@ -1654,14 +1689,18 @@ function help_function ()
     mvfile [-n] filenames ... [-- sudo_prefix ...]
     varset variables ...
  <<< Tools: Non-interactive >>>
+    argv0 executable arguments ... (include argv[0])
     backup_file filename ... [-- sudo_prefix ...]
     convert_to_html filename ...
     mkscreenacl usernames ...
+    repeat times arguments ...
+    wait_success arguments ...
 
  <<< Miscellaneous: Background Jobs >>>
     check_dmesg seconds
     check_system_status seconds
  <<< Miscellaneous: Compatibility >>>
+    fbterm_chewing [size] [arguments ...]
     gen_ms_inet_shortcut filename url
     unzip_nomac filenames ...
  <<< Miscellaneous: Personal >>>
@@ -1787,6 +1826,8 @@ shopt -s checkhash
 shopt -s cmdhist
 shopt -s mailwarn
 
+complete -A alias helpa
+complete -A alias help_aliases
 complete -A command check_command_existent
 complete -A directory createdir_askmode
 complete -A function helpf
@@ -1794,6 +1835,19 @@ complete -A function help_function
 complete -A variable varset
 complete -A variable path_editor
 complete -A user mkscreenacl
+
+if check_command_existent _command; then
+	complete -F _command wait_success
+fi
+
+if check_command_existent _screen; then
+	complete -F _screen screen256
+fi
+
+if check_command_existent _rpmdev_installed_packages; then
+	complete -F _rpmdev_installed_packages rpmdu
+	complete -F _rpmdev_installed_packages rpmsize
+fi
 
 ulimit -S -c unlimited 2> /dev/null
 
