@@ -478,7 +478,7 @@ function prehistory_backup ()
 		echo "+$[$currentcount-$previoushistorycount])"
 	fi
 	echo "$currentcount" > "$historycountfile"
-	\cp -f "$HISTFILE" "$historybackupfile"
+	command cp -f "$HISTFILE" "$historybackupfile"
 }
 
 ########## Trash Manager ##########
@@ -591,7 +591,7 @@ function trash_recover ()
 			if [ "$?" = "0" ]
 			then
 				echo "Remove: $oneline"
-				\rm -rf "$oneline"
+				command rm -rf "$oneline"
 			fi
 		done
 	}
@@ -1221,6 +1221,7 @@ function backup_file ()
 					j=$j+1
 					continue
 				else
+					history -s "$FUNCNAME" "$@"
 					"${prefixlist[@]}" \cp -p "${arglist[$i]}" "$rootfilename.$j"
 					history -s "${prefixlist[@]}" \cp -p "${arglist[$i]}" "$rootfilename.$j"
 					"${prefixlist[@]}" touch -r "${arglist[$i]}" "$rootfilename.$j"
@@ -1234,8 +1235,9 @@ function backup_file ()
 				printf "\e[1;33mPlease delete some backup file because I only use 0 - 9.\e[m\n"
 			fi
 		else
-			"${prefixlist[@]}" \cp -p "${arglist[$i]}" "$rootfilename"
-			history -s "${prefixlist[@]}" \cp -p "${arglist[$i]}" "$rootfilename"
+			history -s "$FUNCNAME" "$@"
+			"${prefixlist[@]}" cp -p "${arglist[$i]}" "$rootfilename"
+			history -s "${prefixlist[@]}" cp -p "${arglist[$i]}" "$rootfilename"
 			"${prefixlist[@]}" touch -r "${arglist[$i]}" "$rootfilename"
 			history -s "${prefixlist[@]}" touch -r "${arglist[$i]}" "$rootfilename"
 		fi
@@ -1264,8 +1266,8 @@ function get_memory_info ()
 {
 	case "`uname`" in
 		"Linux"|"GNU")
-			local meminfoline="`free -m | \grep -i mem`"
-			local swapinfoline="`free -m | \grep -i swap`"
+			local meminfoline="`free -m | command grep -i mem`"
+			local swapinfoline="`free -m | command grep -i swap`"
 			local memtotal="`echo "$meminfoline" | awk '{print $2}'`"
 			local memused="`echo "$meminfoline" | awk '{print $3}'`"
 			local membuf="`echo "$meminfoline" | awk '{print $6}'`"
@@ -1352,6 +1354,7 @@ function mvfile ()
 		read -p "New name: " -e -i "${arglist[$i]}" new_file_name
 		if [ "$new_file_name" ] && [ "${arglist[$i]}" != "$new_file_name" ]
 		then
+			history -s "$FUNCNAME" "$@"
 			"${prefixlist[@]}" mv -iv "${arglist[$i]}" "$new_file_name"
 			history -s "${prefixlist[@]}" mv -iv "${arglist[$i]}" "$new_file_name"
 		fi
