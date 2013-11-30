@@ -106,6 +106,7 @@ export EDITOR=vim
 export FCEDIT=vim
 export VISUAL=vim
 export PAGER=less
+export GCC_COLORS=1
 
 
 # Aliases
@@ -135,6 +136,8 @@ alias screen256='screen -T screen-256color'
 alias ndate='date +%H:%M:%S---%A---%x'
 alias npasswd="getent passwd | awk 'BEGIN {FS=\":\"} {printf \"%24s%3s%6s%6s %-28s%-18s>> %s\\n\",\$1,\$2,\$3,\$4,\$6,\$7,\$5}' | $PAGER"
 alias ngroup="getent group | awk 'BEGIN {FS=\":\"} {printf \"%24s%3s%6s >> %s\\n\",\$1,\$2,\$3,\$4}' | $PAGER"
+
+alias git_history='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=iso'
 
 
 # Functions
@@ -1324,6 +1327,56 @@ function argv0 ()
 	( exec -a "$argv0" "$execname" "$@" )
 }
 
+function chr ()
+{
+	printf $(printf '\\%03o\\n' "$1")
+}
+
+function hex ()
+{
+	printf "0x%02x\n" "$1"
+}
+
+function ord ()
+{
+	printf "%d 0x%02x 0%03o\n" "'$1" "'$1" "'$1"
+}
+
+function cc_define ()
+{
+	local -i i
+	local mycpp="${CPP}"
+	if [ -z "${mycpp}" ]; then
+		if [ -z "${CC}" ]; then
+			mycpp="cpp"
+		else
+			mycpp="${CC} -E"
+		fi
+	fi
+
+	split_arguments "$@"
+
+	{
+		(( i = 0 ))
+		while [ "${prefixlist[$i]}" ]; do
+			echo "#include <${prefixlist[$i]}>"
+			(( i++ ))
+		done
+		(( i = 0 ))
+		while [ "${arglist[$i]}" ]; do
+			echo "${arglist[$i]}"
+			(( i++ ))
+		done
+	} | ${mycpp} - | tail -n "${#arglist[@]}"
+	unset arglist
+	unset prefixlist
+}
+
+function cxx_define ()
+{
+	CPP="${CXXCPP}" CC="${CXX:-c++ -x c++}" cc_define "$@"
+}
+
 function repeat ()
 {
 	local repeat_times="$1"
@@ -1689,12 +1742,18 @@ function help_function ()
     mvfile [-n] filenames ... [-- sudo_prefix ...]
     varset variables ...
  <<< Tools: Non-interactive >>>
-    argv0 executable arguments ... (include argv[0])
     backup_file filename ... [-- sudo_prefix ...]
     convert_to_html filename ...
     mkscreenacl usernames ...
     repeat times arguments ...
     wait_success arguments ...
+ <<< Tools: Programming >>>
+    argv0 executable arguments ... (include argv[0])
+    cc_define macro [-- included_headers ...]
+    cxx_define macro [-- included_headers ...]
+    chr number
+    hex number
+    ord character
 
  <<< Miscellaneous: Background Jobs >>>
     check_dmesg seconds
