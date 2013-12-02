@@ -1000,7 +1000,7 @@ function configfile_fetch ()
 	fi
 
 	args=("$@")
-	for((i=2, j=0; i<=$#; i++, j++)){
+	for((i=1, j=0; i<=$#; i++, j++)){
 		file_name[$j]="${args[$i]}"
 	}
 
