@@ -107,7 +107,7 @@ export FCEDIT=vim
 export VISUAL=vim
 export PAGER=less
 export GCC_COLORS=1
-export GREP_OPTIONS='--color=always'
+export GREP_OPTIONS='--color=auto'
 
 
 # Aliases
@@ -122,6 +122,7 @@ alias cp='cp -pi'
 alias mv='mv -i'
 alias jobs='jobs -l'
 alias less='less -RS'
+alias grep='grep --color=always'
 
 # Non-aliased common tools (safe for use in script)
 alias safe_ls='\ls'
