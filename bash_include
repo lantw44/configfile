@@ -127,8 +127,13 @@ alias less='less -RS'
 alias grep='grep --color=always'
 
 case "$OSTYPE" in
-	*gnu*)      alias ls='ls --color=always -F' ;;
-	*freebsd*)  alias ls='CLICOLOR=1 CLICOLOR_FORCE=1 ls -F' ;;
+	*gnu*)
+		alias ls='ls --color=always -F'
+		;;
+	*freebsd*)
+		alias ls='CLICOLOR=1 CLICOLOR_FORCE=1 ls -F'
+		export LSCOLORS='ExGxFxdxCxDxDxhbadacad'
+		;;
 esac
 
 # Non-aliased common tools (safe for use in script)
