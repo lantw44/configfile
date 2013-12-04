@@ -25,14 +25,16 @@ case "${EXTENSION}" in
 	'ac'|'m4'|'po'|'dirs') EXTENSION="sh" ;;
 	'am') EXTENSION="mk" ;;
 	's') EXTENSION="asm" ;;
+	'p') EXTENSION="c" ;;
 esac
 
 case "${BASENAME%%.*}" in
 	Makefile|makefile|GNUmakefile|BSDmakefile|Makevars) EXTENSION=mk ;;
-	pkg-install|pkg-deinstall|pkg-req|rc) EXTENSION=sh ;;
+	pkg-install|pkg-deinstall|pkg-req|pkg-plist|rc) EXTENSION=sh ;;
 	PKGBUILD|bash_include) EXTENSION=bash ;;
 	POTFILES) EXTENSION=ini ;;
 	vimrc|vimadd) EXTENSION=vim ;;
+	patch-*) EXTENSION=patch ;;
 esac
 
 case "${CGIT_REPO_NAME}" in
