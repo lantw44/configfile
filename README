@@ -8,7 +8,7 @@ bash_include，正確的檔名是 ~/.bash_include
         . ~/.bash_include
     fi
 
-cgit，這是我的 cgit 設定檔
+cgit，這是我的 cgit 設定檔，需使用 cgit v0.9.2 或更高版本
     用於線上瀏覽 git repository 的設定檔。
 
 screenrc，正確的檔名是 ~/.screenrc
