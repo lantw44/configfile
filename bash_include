@@ -1654,6 +1654,7 @@ function freebsd_ports_should_rebuild () {
 alias helpf='help_function'
 alias helpm='help_myself'
 alias helpa='help_aliases'
+alias help_aliases='help_function'
 
 function print_iconv ()
 {
@@ -1672,28 +1673,6 @@ function help_myself ()
 		i=$(($i+1))
 		shift
 	done
-}
-
-function help_aliases ()
-{
-	cat << "ENDHELPMSG"
- %%% Aliases: Command Prompt %%%
-    startcolor    - Enable colorful PS1 prompting
-    stopcolor     - Disable colorful PS1 prompting
-
- %%% Aliases: Terminal %%%
-    savetty       - Save current terminal mode
-    resetty       - Reset to last saved terminal mode
-
- %%% Aliases: Nice Format %%%
-    ndate         - Format the output of `date'
-    npasswd       - Format the output of `getent passwd'
-    ngroup        - Format the output of `getent group'
-
- %%% Aliases: Other %%%
-    vimhtml       - Start Vim and set tabstop and shiftwidth to 2
-    screen256     - Start GNU Screen and set TERM to screen-256color
-ENDHELPMSG
 }
 
 function help_obsolete ()
@@ -1727,6 +1706,19 @@ function help_function ()
     bgclean [all | numbers ...]                            (bgrm)
     bgcount                                                (bgc)
     bgdu
+
+ <<< Group: Configuration File >>>
+    configfile_fetch [git_tag [file_name_list ...]]
+    configfile_initial_setup
+ x  fetch_remote_file local_file_name remote_url
+ x  fetch_and_merge local_file_name remote_url
+
+ <<< Group: New PATH Editor >>>
+    path_editor [variable]
+    ldpath_editor
+ x  newpath_init
+ x  newpath_gen
+
  <<< Group: Trash >>>
     trash_mv [filenames ...] [-- sudo_prefix ...]     (trash_put, trash_add)
     trash_ls                                          (trash_list)
@@ -1736,58 +1728,61 @@ function help_function ()
     trash_rm numbers ...                              (trash_drop, trash_clean)
     trash_count                                       (trash_ct)
     trash_du [-- sudo_prefix ...]
- <<< Group: New PATH Editor >>>
-    path_editor [variable]
-    ldpath_editor
- x  newpath_init
- x  newpath_gen
- <<< Group: Configuration File >>>
-    configfile_fetch [git_tag [file_name_list ...]]
-    configfile_initial_setup
- x  fetch_remote_file local_file_name remote_url
- x  fetch_and_merge local_file_name remote_url
 
- <<< System: Terminal >>>
-    set_console_title
-    set_terminal_size
- <<< System: Information >>>
-    get_memory_info
- <<< System: Packages Management >>>
-    rpmdu [-kmg] packages ...
-    rpmsize [-bkmg] packages ...
-    freebsd_ports_should_rebuild
- <<< System: Privileges >>>
-    keep_sudo_credential [seconds]
+ <<< Tools: Background Jobs >>>
+    check_dmesg seconds
+    check_system_status seconds
+
+ <<< Tools: Backup >>>
+    backup_file filename ... [-- sudo_prefix ...]
+
+ <<< Tools: Compatibility >>>
+    fbterm_chewing [size] [arguments ...]
+    gen_ms_inet_shortcut filename url
+    unzip_nomac filenames ...
+
+ <<< Tools: GNU Screen >>>
+    mkscreenacl usernames ...
 
  <<< Tools: Interactive >>>
-    compile_all [-n] filenames ...
     editlink filenames ... [-- sudo_prefix ...]
     mvfile [-n] filenames ... [-- sudo_prefix ...]
     varset variables ...
- <<< Tools: Non-interactive >>>
-    backup_file filename ... [-- sudo_prefix ...]
-    convert_to_html filename ...
-    mkscreenacl usernames ...
-    repeat times arguments ...
-    wait_success arguments ...
+
+ <<< Tools: Memory >>>
+    get_memory_info
+
+ <<< Tools: Packages >>>
+    rpmdu [-kmg] packages ...
+    rpmsize [-bkmg] packages ...
+    freebsd_ports_should_rebuild
+
+ <<< Tools: Personal Files >>>
+    check_important_files
+    prehistory_backup
+
  <<< Tools: Programming >>>
     argv0 executable arguments ... (include argv[0])
     cc_define macro [-- included_headers ...]
+    compile_all [-n] filenames ...
     cxx_define macro [-- included_headers ...]
     chr number
     hex number
     ord character
 
- <<< Miscellaneous: Background Jobs >>>
-    check_dmesg seconds
-    check_system_status seconds
- <<< Miscellaneous: Compatibility >>>
-    fbterm_chewing [size] [arguments ...]
-    gen_ms_inet_shortcut filename url
-    unzip_nomac filenames ...
- <<< Miscellaneous: Personal >>>
-    check_important_files
-    prehistory_backup
+ <<< Tools: Repetitive Jobs >>>
+    repeat times arguments ...
+    wait_success arguments ...
+
+ <<< Tools: Security >>>
+    keep_sudo_credential [seconds]
+
+ <<< Tools: Terminal >>>
+    set_console_title
+    set_terminal_size
+
+ <<< Tools: Web >>>
+    convert_to_html filename ...
 
  <<< Shared Internal Functions >>>
  x  createdir_askmode dirname
@@ -1798,8 +1793,27 @@ function help_function ()
  x  get_terminal_size
  x  split_arguments [arguments ...]
 
-Some simple aliases are not printed. Type `help_aliases' to print them.
-Obsolete functions are not printed. Type `help_obsolete' to print them.
+ <<< Aliases: Command Prompt >>>
+    startcolor    - Enable colorful PS1 prompting
+    stopcolor     - Disable colorful PS1 prompting
+
+ <<< Aliases: Git >>>
+    git_history   - Show git history in a more compact format
+
+ <<< Aliases: GNU Screen >>>
+    screen256     - Start GNU Screen and set TERM to screen-256color
+
+ <<< Aliases: Nice Format >>>
+    ndate         - Format the output of `date'
+    npasswd       - Format the output of `getent passwd'
+    ngroup        - Format the output of `getent group'
+
+ <<< Aliases: Terminal >>>
+    savetty       - Save current terminal mode
+    resetty       - Reset to last saved terminal mode
+
+ <<< Aliases: Vim >>>
+    vimhtml       - Start Vim and set tabstop and shiftwidth to 2
 ENDHELPMSG
 	} | $PAGER && return 0
 	local current_charset=`echo "$LC_ALL" | cut -d . -f 2`
