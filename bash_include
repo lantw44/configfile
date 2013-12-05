@@ -32,6 +32,7 @@ if [[ "$-" == *i* ]] ; then interactive_shell=1; fi
 		unset tty_short
 	fi
 
+
 # Internal Variables
 
 colorprompting='\[\e[1;31m\]\!\[\e[m\] \[\e[35m\]$tty_short\[\e[m\][\[\e[1;33m\]\u\[\e[m\]@\[\e[1;32m\]\h\[\e[m\] \[\e[1;36m\]\w\[\e[m\]]'
@@ -110,10 +111,7 @@ export GCC_COLORS=1
 export GREP_OPTIONS='--color=auto'
 
 
-# Aliases
-
-alias startcolor='PS1=$colorprompting; PS2=$colorsecondprompting'
-alias stopcolor='PS1=$nocolorprompting; PS2=$nocolorsecondprompting'
+# Aliases: Replace common tools
 
 alias ll='ls -lF'
 alias lh='ls -lFh'
@@ -136,7 +134,9 @@ case "$OSTYPE" in
 		;;
 esac
 
-# Non-aliased common tools (safe for use in script)
+
+# Aliases: Non-aliased common tools (safe for use in script)
+
 alias safe_ls='\ls'
 alias safe_cp='\cp'
 alias safe_mv='\mv'
@@ -145,113 +145,71 @@ alias safe_jobs='\jobs'
 alias safe_less='\less'
 alias safe_grep='GREP_OPTIONS= \grep'
 
+
+# Aliases: Command Prompt
+
+alias startcolor='PS1=$colorprompting; PS2=$colorsecondprompting'
+alias stopcolor='PS1=$nocolorprompting; PS2=$nocolorsecondprompting'
+
+
+# Aliases: Language
+
 alias cccc='LANG=C;LANGUAGE=C;LC_ALL=C'
 alias enus='LANG=en_US.UTF-8;LANGUAGE=en_US:en;LC_ALL=en_US.UTF-8'
 alias big5='LANG=zh_TW.Big5;LANGUAGE=zh_TW:zh:en;LC_ALL=zh_TW.Big5'
 alias zhtw='LANG=zh_TW.UTF-8;LANGUAGE=zh_TW:zh:en;LC_ALL=zh_TW.UTF-8'
 
-alias savetty='default_tty_setting=`stty -g`'
-alias resetty='stty $default_tty_setting'
 
-alias vimhtml='vim -c "set ts=2" -c "set sw=2"'
-alias screen256='screen -T screen-256color'
+# Aliases: Nice Format
 
 alias ndate='date +%H:%M:%S---%A---%x'
 alias npasswd="getent passwd | awk 'BEGIN {FS=\":\"} {printf \"%24s%3s%6s%6s %-28s%-18s>> %s\\n\",\$1,\$2,\$3,\$4,\$6,\$7,\$5}' | $PAGER"
 alias ngroup="getent group | awk 'BEGIN {FS=\":\"} {printf \"%24s%3s%6s >> %s\\n\",\$1,\$2,\$3,\$4}' | $PAGER"
 
+
+# Aliases: Terminal
+
+alias savetty='default_tty_setting=`stty -g`'
+alias resetty='stty $default_tty_setting'
+
+
+# Aliases: Git, GNU Screen, Vim
+
 alias git_history='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=iso'
+alias screen256='screen -T screen-256color'
+alias vimhtml='vim -c "set ts=2" -c "set sw=2"'
 
 
-# Functions
+# Functions: Shared Internal Functions #######################################
 
-function compile_all ()
+function createdir_askmode ()
 {
-	local noask=0
-	local mycc="${CC}"
-	local mycxx="${CXX}"
-	local myexe="`get_executable_extension`"
-	local newCFLAGS
-	local newCXXFLAGS
-	local newLDFLAGS
-	[ "$1" = '' ] && echo "Which file(s) do you want to compile? " && return 1
-	[ "$1" = "-n" ] && noask=1
-	if [ "$noask" = "0" ]; then
-		read -e -p "CFLAGS: " -i "$CFLAGS" newCFLAGS
-		read -e -p "CXXFLAGS: " -i "$CXXFLAGS" newCXXFLAGS
-		read -e -p "LDFLAGS: " -i "$LDFLAGS" newLDFLAGS
-		[ "$newCFLAGS" '!=' '' ] && CFLAGS=$newCFLAGS
-		[ "$newCXXFLAGS" '!=' '' ] && CXXFLAGS=$newCXXFLAGS
-		[ "$newLDFLAGS" '!=' '' ] && LDFLAGS=$newLDFLAGS
+	newdir_mode="$2"
+	if mkdir -p "$1"
+	then
+		echo "Directory $1 is created."
+		printf "Change the mode of the directory... "
+		read -i "$newdir_mode" -p ">>> Mode: " -e newdir_mode
+		chmod "$newdir_mode" "$1"
 	else
-		shift
+		echo "Cannot create directory $1!"
+		return 1
 	fi
-	[ -z "${mycc}" ] && mycc=cc
-	[ -z "${mycxx}" ] && mycxx=c++
-	while [ "$1" '!=' '' ]
-	do
-		local targetfile="`echo "$1" | sed 's|\(.*\)\..*|\1|'`$myexe"
-		local suffix="`echo "$1" | sed 's|.*\.\(.*\)|\1|'`"
-		if [ -f "$1" ]; then
-			true
-		else
-			printf \
-			"\e[1;33mWarning\e[0m: $1 Non-existent file or not a regular file\n"
-			shift ; continue
-		fi
-		[ "$targetfile" = "$1" ] && shift && continue
-		case "$suffix" in
-			c)
-				echo "[${mycc}] $1 -> $targetfile"
-				${mycc} $CFLAGS "$1" $LDFLAGS -o "$targetfile"
-				;;
-			cpp|cxx|cc|C)
-				echo "[${mycxx}] $1 -> $targetfile"
-				${mycxx} $CXXFLAGS "$1" $LDFLAGS -o "$targetfile"
-				;;
-			*)
-				printf "$1: Unknown suffix (\e[1;33mskipped\e[0m)\n"
-				;;
-		esac
-		[ "$?" '!=' "0" ] && printf \
-			'\e[1;31mError\e[0m while compiling file\n'
-		shift
-	done
-	return 0
 }
 
-
-function convert_to_html ()
+function check_command_existent ()
 {
-	while [ "$1" '!=' '' ]
-	do
-		for i in "$1"
-		do
-			vim $i -c 'set background=dark' \
-				-c 'highlight PreProc ctermfg=darkcyan' \
-				-c "$BEFORE_CONVERT_TO_HTML" \
-				-c "$BEFORE_CONVERT_TO_HTML1" \
-				-c "$BEFORE_CONVERT_TO_HTML2" \
-				-c TOhtml \
-				-c :w \
-				-c :qa
-		done
-		shift
-	done
+	type "$1" &> /dev/null
+	return $?
 }
 
-function mkscreenacl ()
+function is_file_type ()
 {
-	local screen_permit_command="select windowlist other meta detach reset hardcopy info redisplay lastmsg next prev xon xoff windows suspend help colon copy paste writebuf readbuf displays stuff attach"
-	while [ "$1" '!=' '' ]
-	do
-		for i in $screen_permit_command
-		do
-			echo "aclchg $1 +x $i"
-		done
-		echo "aclchg $1 -rw \"\#?\""
-		shift
-	done
+	local filename="$1"
+	local typename="$2"
+	shift 2
+	[ "`"$@" find "$filename" -maxdepth 0 -type "$typename"`" ] && return 0
+	return 1
 }
 
 function get_file_size ()
@@ -266,7 +224,41 @@ function get_file_size ()
 	unset prefixlist
 }
 
-########## Background ##########
+function get_executable_extension ()
+{
+	local lsloc="`command which ls`"
+	local lsalt="`echo ${lsloc}.* | cut -d ' ' -f 1`"
+	cmp "$lsloc" "$lsalt" &> /dev/null && echo ${lsalt:${#lsloc}} && return
+}
+
+function split_arguments ()
+{
+	local argcount=$#
+	local -i i=0
+	local prefix_start=0
+	while [ "$1" ]
+	do
+		if [ "$prefix_start" = "0" ]
+		then
+			if [ "$1" = "--" ]
+			then
+				prefix_start=1
+				i=0
+				shift
+				continue
+			else
+				arglist[$i]="$1"
+			fi
+		else
+			prefixlist[$i]="$1"
+		fi
+		i=$i+1
+		shift
+	done
+}
+
+
+# Group: Background Tasks ####################################################
 
 alias bgr=bgrun
 alias bgv=bgview
@@ -428,403 +420,193 @@ function bgdu ()
 	} | $PAGER
 }
 
-########## Background End ##########
 
-function check_dmesg ()
+# Group: Configuration Files #################################################
+
+function fetch_remote_file ()
 {
-	[ "$#" = "0" ] && return 1
-
-	while true
-	do
-		cdm_previous_dmesg_buf="$cdm_current_dmesg_buf"
-		cdm_current_dmesg_buf="`dmesg`"
-		[ "$cdm_previous_dmesg_buf" '!=' "$cdm_current_dmesg_buf" ] && \
-			[ "$cdm_first_run" = "0" ] && \
-			echo '===> You should check the system message buffer <==='
-		sleep $1
-		[ "$?" '!=' "0" ] && return 1
-		cdm_first_run=0
-	done
-}
-
-function check_system_status ()
-{
-	[ "$#" = "0" ] && return 1
-
-	filename_mail="$MAIL"
-	filename_messages="/var/log/messages"
-	filename_audit="/var/log/audit/audit.log"
-
-	while true
-	do
-		previous_dmesg_buf="$current_dmesg_buf"
-		current_dmesg_buf="`dmesg`"
-		previous_mail_info="$current_mail_info"
-		current_mail_info="`ls -l "$filename_mail"`"
-		previous_messages_info="$current_messages_info"
-		current_messages_info="`ls -l "$filename_messages"`"
-		previous_audit_info="$current_audit_info"
-		current_audit_info="`ls -l "$filename_audit"`"
-		if [ "$first_run" = "0" ]
-		then
-			[ "$previous_dmesg_buf" '!=' "$current_dmesg_buf" ] && echo "===> The system message buffer is modified (dmesg) <==="
-			[ "$previous_mail_info" '!=' "$current_mail_info" ] && echo "===> Your mailbox $filename_mail is modified <==="
-			[ "$previous_messages_info" '!=' "$current_messages_info" ] && echo "===> $filename_messages is modified <==="
-			[ "$previous_audit_info" '!=' "$current_audit_info" ] && echo "===> $filename_audit is modified <==="
-		fi
-		sleep $1
-		first_run=0
-	done
-}
-
-function prehistory_backup ()
-{
-	echo "Checking your current history file"
-	local -i currentcount="`wc -l < "$HISTFILE"`"
-	currentcount="${currentcount/ */}"
-	[ '!' -f "$historycountfile" ] && touch "$historycountfile"
-	local -i previoushistorycount="$(< "$historycountfile")"
-	if [ "$currentcount" -lt "$previoushistorycount" ]
-	then
-		printf "\e[1;31mWarning\e[m: Your $HISTFILE may be TRUNCATED OR OVERWRITTEN BY OTHER PROGRAMS!\n"
-		printf "Note: \e[1;33m$currentcount\e[m < $previoushistorycount\n"
-		echo "Your $historycountfile and $historybackupfile will not be overwritten until this problem is fixed."
-		echo " 1. Check your $HISTFILE."
-		echo " 2. Edit your $HISTFILE manually if some unexpected changes are found."
-		echo "    (You may need $historybackupfile to do it) "
-		echo " 3. Remove the file $historycountfile."
-		echo " 4. Run the command \`prehistory_backup' again."
-		return 3
-	fi
-	echo -n "Backing up your current history file ($previoushistorycount -> $currentcount, "
-	if [ "$previoushistorycount" = "$currentcount" ]
-	then
-		echo "no modification)"
+	local rval
+	printf "==> Fetch remote file \e[1;33m$2\e[m as \e[1;35m$1\e[m ...\n"
+	if check_command_existent curl; then
+		curl -f -o "$1" "$2"
+		rval=$?
+	elif check_command_existent wget; then
+		wget --progress=dot -O "$1" "$2"
+		rval=$?
+	elif check_command_existent fetch; then
+		fetch -o "$1" "$2"
+		rval=$?
+	elif check_command_existent ftp; then
+		ftp -o "$1" "$2"
+		rval=$?
 	else
-		echo "+$[$currentcount-$previoushistorycount])"
+		echo "<== Sorry, I don't know how to fetch remote files on your system"
+		return 1
 	fi
-	echo "$currentcount" > "$historycountfile"
-	safe_cp -f "$HISTFILE" "$historybackupfile"
-}
-
-########## Trash Manager ##########
-
-alias trash_put=trash_mv
-alias trash_add=trash_mv
-alias trash_list=trash_ls
-alias trash_ct=trash_count
-alias trash_restore=trash_recover
-alias trash_rc=trash_recover
-alias trash_drop=trash_rm
-alias trash_clean=trash_rm
-
-function trash_mv ()
-{
-	[ "$#" = "0" ] && return 1
-	[ '!' -d "$trashdir" ] && createdir_askmode "$trashdir" 0700
-	local original_path
-	local current_time
-	local -i i=0
-	split_arguments "$@"
-	while [ "${arglist[$i]}" ]
-	do
-		original_path="`"${prefixlist[@]}" $realpath_program "${arglist[$i]}"`"
-		current_time=`date "+%Y%m%d-%H%M%S"`
-		better_time=`date "+%Y-%m-%d %H:%M:%S"`
-		dirname="`basename "${arglist[$i]}" | sed -e 's/-/_/g' -e 's/ /_/g'`"
-		fulldirname="$trashdir/$current_time-$dirname"
-		mkdir -p "$fulldirname"
-		echo "Move: ${arglist[$i]} -> $fulldirname"
-		"${prefixlist[@]}" mv "${arglist[$i]}" "$fulldirname"
-		if [ "$?" = "0" ]
-		then
-			echo "$better_time" > "$fulldirname/information.date"
-			echo "$original_path" > "$fulldirname/information.path"
-		else
-			rmdir "$fulldirname"
-		fi
-		i=$i+1
-		shift
-	done
-	unset arglist
-	unset prefixlist
-}
-
-function trash_rm ()
-{
-	split_arguments "$@"
-	local -i i=0
-	while [ "${arglist[$i]}" ]
-	do
-		arglist[$i]="-e ${arglist[$i]}p"
-		i=$i+1
-	done
-	trash_dirname=`find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n ${arglist[*]} `
-	echo 'Type rm -rf $trash_dirname to remove them.'
-	unset arglist
-	unset prefixlist
-}
-
-function trash_ls ()
-{
-	local -i i=1
-	local oneline
-	find "$trashdir" -mindepth 1 -maxdepth 1 | sort | {
-		while read oneline
-		do
-			printf "%6d %s %s\n" "$i" \
-				"$(< "$oneline/information.date")" \
-				"$(< "$oneline/information.path")"
-			i=$i+1
-		done
-	} | $PAGER
-}
-
-function trash_pushd ()
-{
-	[ -z "$1" ] && return 1
-	pushd `find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n $1p`
-}
-
-function trash_cd ()
-{
-	[ -z "$1" ] && return 1
-	cd `find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n $1p`
-}
-
-function trash_recover ()
-{
-	[ -z "$1" ] && return 1
-	split_arguments "$@"
-	local -i i=0
-	while [ "${arglist[$i]}" ]
-	do
-		arglist[$i]="-e ${arglist[$i]}p"
-		i=$i+1
-	done
-	find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n ${arglist[*]} | {
-		while read oneline
-		do
-			local fromfile="$oneline/`basename "$(< "$oneline/information.path")"`"
-			local tofile="`dirname "$(< "$oneline/information.path")"`"
-			if [ -e "$(< "$oneline/information.path")" ]
-			then
-				echo "Destination file exists."
-				continue
-			fi
-			echo "Move: $fromfile -> $tofile"
-			"${prefixlist[@]}" mv -f "$fromfile" "$tofile"
-			if [ "$?" = "0" ]
-			then
-				echo "Remove: $oneline"
-				rm -rf "$oneline"
-			fi
-		done
-	}
-	unset arglist
-	unset prefixlist
-}
-
-function trash_count ()
-{
-	find "$trashdir" -mindepth 1 -maxdepth 1 | wc | awk '{print $2}'
-}
-
-function trash_du ()
-{
-	split_arguments "$@"
-	local oneline
-	local -i i=1
-	find "$trashdir" -maxdepth 1 -mindepth 1 | sort | {
-		while read oneline
-		do
-			printf "%6d %8d %s\n" "$i" \
-				"`get_file_size "$oneline" -- "${prefixlist[@]}"`" \
-				"$(< "$oneline/information.path")"
-			i=$i+1
-		done
-	} | $PAGER
-	unset arglist
-	unset prefixlist
-}
-
-########## Trash Manager End ##########
-
-function split_arguments ()
-{
-	local argcount=$#
-	local -i i=0
-	local prefix_start=0
-	while [ "$1" ]
-	do
-		if [ "$prefix_start" = "0" ]
-		then
-			if [ "$1" = "--" ]
-			then
-				prefix_start=1
-				i=0
-				shift
-				continue
-			else
-				arglist[$i]="$1"
-			fi
-		else
-			prefixlist[$i]="$1"
-		fi
-		i=$i+1
-		shift
-	done
-}
-
-function check_important_files ()
-{
-	important_files="$HOME/.screenrc $HOME/.vimrc"
-	for i in $important_files
-	do
-		[ '!' -f "$i" ] && printf "\e[1;31mWarning\e[m: \e[1;33m$i\e[m does not exist.\n"
-	done
-}
-
-########## PATH Editor ##########
-
-function split_path_core ()
-{
-	echo "$current_path" | {
-		while read -d : oneline
-		do
-			[ '!' "$oneline" = '^' ] && echo "$oneline"
-		done
-		[ '!' "$oneline" = '^' ] && echo "$oneline"
-	}
-	unset oneline
-}
-
-function split_path ()
-{
-	coproc split_path_core
-	readarray -t -u ${COPROC[0]} patharr
-	wait $COPROC_PID
-}
-
-function update_path ()
-{
-	current_path=''
-	local -i i=0
-	local firsttime="yes"
-	while [ "${patharr[$i]}" ]
-	do
-		if [ '!' "${patharr[$i]}" = "^" ]
-		then
-			if [ "$firsttime" ]
-			then
-				firsttime=''
-			else
-				current_path+=':'
-			fi
-			current_path+="${patharr[$i]}"
-		fi
-		i=$i+1
-	done
-}
-
-function old_path_editor ()
-{
-	old_path_editor_core
-}
-
-function old_ldpath_editor ()
-{
-	old_path_editor_core ld
-}
-
-function old_path_editor_core ()
-{
-	if [ "$1" = "ld" ]
-	then
-		export current_path="$LD_LIBRARY_PATH"
+	if [ "$rval" = "0" ]; then
+		printf "<== \e[1;32mDone\e[m\n"
 	else
-		export current_path="$PATH"
+		printf "<== \e[1;31mFailed\e[m\n"
 	fi
-	local should_continue="yes"
-	local command
-	local command_sub
-	local command_sub2
+	return $rval
+}
+
+function fetch_and_merge ()
+{
+	local merge_cmd
+	local merge_cmd_prog
+	local local_file="$1"
+	local remote_file="$2"
+	if fetch_remote_file "${local_file}.new" "${remote_file}"
+	then
+		if [ '!' -e "${local_file}" ]; then
+			safe_mv -vf "${local_file}.new" "${local_file}"
+		else
+			while true
+			do
+				echo ""
+				cmp "${local_file}" "${local_file}.new" &> /dev/null && \
+					echo "Downloaded file is the same as installed one." && \
+					break
+				printf "Configuration files update tool: "
+				printf "Updating \e[1;35m${local_file}\e[m\n"
+				echo ""
+				echo " Install: Install the new version"
+				echo " Keep:    Keep the old version"
+				echo " Retry:   Give up downloaded file and try the next mirror"
+				echo ""
+				echo " Diff:    View the difference between versions"
+				echo " Merge:   Merge two files by yourself"
+				echo ""
+				read -e -p "[I]nstall/(K)eep/(R)etry/(D)iff/(M)erge ? " merge_cmd
+				case "${merge_cmd}" in
+					''|I|i)
+						safe_mv -vf "${local_file}.new" "${local_file}"
+						break
+						;;
+					K|k)
+						rm -f "${local_file}.new"
+						break
+						;;
+					R|r)
+						rm -f "${local_file}.new"
+						return 1
+						;;
+					D|d)
+						diff -u "${local_file}" "${local_file}.new" | $PAGER
+						;;
+					M|m)
+						read -e -p "Merge tool: " -i "$merge_cmd_prog" merge_cmd_prog
+						if $merge_cmd_prog "${local_file}" "${local_file}.new"; then
+							break
+						else
+							echo "Command is exited with error. Please try again."
+						fi
+						;;
+					*)
+						printf " \e[33m*** Unknown command ***\e[m \n"
+						;;
+				esac
+			done
+		fi
+		return 0
+	fi
+	return 1
+}
+
+function configfile_fetch ()
+{
+	local cgit_mirror_list=(
+		"http://www.tfcis.org/~lantw44/cgit/cgit.cgi/configfile/plain"
+		"http://phantom.tfcis.org/~lantw44/cgit/cgit.cgi/configfile/plain"
+		"http://master.lant.com.tw/~lantw44/cgit/cgit.cgi/configfile/plain")
+	local github_mirror_list=(
+		"https://raw.github.com/lantw44/configfile"
+		"http://raw.github.com/lantw44/configfile")
+	local args
+	local file_url
+	local file_version
+	local completed
+	local -a file_name
 	local -i i
-	while [ "$should_continue" ]
+	local -i j
+
+	if [ "$1" ]; then
+		file_version="$1"
+	else
+		file_version="master"
+	fi
+
+	args=("$@")
+	for((i=1, j=0; i<=$#; i++, j++)){
+		file_name[$j]="${args[$i]}"
+	}
+
+	if [ -z "$file_name"]; then
+		file_name=("bash_include" "vimrc" "screenrc")
+	fi
+
+	for file in ${file_name[@]}
 	do
-		split_path
-		i=0
-		echo "========================================"
-		while [ "${patharr[$i]}" ]
+		completed="false"
+
+		for site in ${cgit_mirror_list[@]}
 		do
-			echo "$i: ${patharr[$i]}"
-			i=$i+1
+			[ "$completed" = "true" ] && break
+			file_url="$site/$file?id=$file_version"
+			if fetch_and_merge "$HOME/.${file}" "$file_url"
+			then
+				completed="true"
+				break
+			fi
 		done
-		[ "$i" = '0' ] && echo "(Empty or not declared)"
-		echo "========================================"
-		read -e -p "[A]ppend/(D)elete/(E)dit/(M)ove/(R)eset/(Q)uit ? " command
-		case "$command" in
-			''|A|a)
-				read -e -p "Type a new entry: " patharr[$i]
-				update_path
-				;;
-			D|d)
-				read -e -p "Index: " command_sub
-				patharr[$command_sub]='^'
-				update_path
-				;;
-			E|e)
-				read -e -p "Index: " command_sub
-				read -e -p "Modify this entry: " -i "${patharr[$command_sub]}" patharr[$command_sub]
-				update_path
-				;;
-			M|m)
-				read -e -p "From: " command_sub
-				read -e -p "To: " command_sub2
-				swaptmp="${patharr[$command_sub]}"
-				patharr[$command_sub]="${patharr[$command_sub2]}"
-				patharr[$command_sub2]="$swaptmp"
-				unset swaptmp
-				update_path
-				;;
-			R|r)
-				if [ "$1" = "ld" ]
-				then
-					current_path="$LD_LIBRARY_PATH"
-				else
-					current_path="$PATH"
-				fi
-				;;
-			Q|q)
-				if [ "$1" = "ld" ]
-				then
-					export LD_LIBRARY_PATH="$current_path"
-					echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-					history -s "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-				else
-					export PATH="$current_path"
-					echo "PATH=$PATH"
-					history -s "PATH=$PATH"
-				fi
-				should_continue=''
-				;;
-			*)
-				printf " \e[33m*** Unknown command ***\e[m \n"
-				;;
-		esac
+
+		for site in ${github_mirror_list[@]}
+		do
+			[ "$completed" = "true" ] && break
+			file_url="$site/$file_version/$file"
+			if fetch_and_merge "$HOME/.${file}" "$file_url"
+			then
+				completed="true"
+				break
+			fi
+		done
+
 	done
-	unset patharr
-	unset current_path
 }
 
-########## PATH Editor End ##########
-
-########## New PATH Editor ##########
-
-function ldpath_editor ()
+function configfile_initial_setup ()
 {
-	path_editor LD_LIBRARY_PATH
+	cat >> ~/.bashrc << "EOF"
+if [ -f ~/.bash_include ]; then
+	. ~/.bash_include
+fi
+EOF
+	if [[ "$OSTYPE" == *freebsd* ]]; then
+		cat >> ~/.bash_login << "EOF"
+GET_TTY_NAME=`tty | cut -c 9`
+[ "$GET_TTY_NAME" = 'v' ] && echo "Login from local virtual terminal: `tty`"
+[ "$GET_TTY_NAME" = 'p' ] && echo "Login from pseudo terminal: `tty`"
+[ "$GET_TTY_NAME" = '/' ] && echo "Login from pseudo terminal: `tty`"
+unset GET_TTY_NAME
+EOF
+	fi
+	cat >> ~/.bash_login << "EOF"
+if [ -f ~/.bashrc ]; then
+	. ~/.bashrc
+fi
+EOF
+	echo "Completed. Type \`help_function' to know how to use!"
+	for i in ~/.bashrc ~/.bash_login ~/.bash_profile ~/.shrc ~/.profile
+	do
+		grep -q -e HISTSIZE -e HISTFILESIZE "$i" 2>/dev/null && \
+			echo "Warning: HISTSIZE or HISTFILESIZE is set in $i!" && \
+			echo "History file features may not work"
+	done
 }
+
+
+# Group: New PATH Editor #####################################################
 
 function newpath_init ()
 {
@@ -985,241 +767,338 @@ function path_editor ()
 	unset pathmodval
 }
 
-########## New PATH Editor End ##########
-
-########## Configuration File ##########
-
-function configfile_fetch ()
+function ldpath_editor ()
 {
-	local cgit_mirror_list=(
-		"http://www.tfcis.org/~lantw44/cgit/cgit.cgi/configfile/plain"
-		"http://phantom.tfcis.org/~lantw44/cgit/cgit.cgi/configfile/plain"
-		"http://master.lant.com.tw/~lantw44/cgit/cgit.cgi/configfile/plain")
-	local github_mirror_list=(
-		"https://raw.github.com/lantw44/configfile"
-		"http://raw.github.com/lantw44/configfile")
-	local args
-	local file_url
-	local file_version
-	local completed
-	local -a file_name
-	local -i i
-	local -i j
+	path_editor LD_LIBRARY_PATH
+}
 
-	if [ "$1" ]; then
-		file_version="$1"
-	else
-		file_version="master"
-	fi
 
-	args=("$@")
-	for((i=1, j=0; i<=$#; i++, j++)){
-		file_name[$j]="${args[$i]}"
+# Obsolete Group: Old PATH Editor ############################################
+
+function split_path_core ()
+{
+	echo "$current_path" | {
+		while read -d : oneline
+		do
+			[ '!' "$oneline" = '^' ] && echo "$oneline"
+		done
+		[ '!' "$oneline" = '^' ] && echo "$oneline"
 	}
-
-	if [ -z "$file_name"]; then
-		file_name=("bash_include" "vimrc" "screenrc")
-	fi
-
-	for file in ${file_name[@]}
-	do
-		completed="false"
-
-		for site in ${cgit_mirror_list[@]}
-		do
-			[ "$completed" = "true" ] && break
-			file_url="$site/$file?id=$file_version"
-			if fetch_and_merge "$HOME/.${file}" "$file_url"
-			then
-				completed="true"
-				break
-			fi
-		done
-
-		for site in ${github_mirror_list[@]}
-		do
-			[ "$completed" = "true" ] && break
-			file_url="$site/$file_version/$file"
-			if fetch_and_merge "$HOME/.${file}" "$file_url"
-			then
-				completed="true"
-				break
-			fi
-		done
-
-	done
+	unset oneline
 }
 
-function configfile_initial_setup ()
+function split_path ()
 {
-	cat >> ~/.bashrc << "EOF"
-if [ -f ~/.bash_include ]; then
-	. ~/.bash_include
-fi
-EOF
-	if [[ "$OSTYPE" == *freebsd* ]]; then
-		cat >> ~/.bash_login << "EOF"
-GET_TTY_NAME=`tty | cut -c 9`
-[ "$GET_TTY_NAME" = 'v' ] && echo "Login from local virtual terminal: `tty`"
-[ "$GET_TTY_NAME" = 'p' ] && echo "Login from pseudo terminal: `tty`"
-[ "$GET_TTY_NAME" = '/' ] && echo "Login from pseudo terminal: `tty`"
-unset GET_TTY_NAME
-EOF
-	fi
-	cat >> ~/.bash_login << "EOF"
-if [ -f ~/.bashrc ]; then
-	. ~/.bashrc
-fi
-EOF
-	echo "Completed. Type \`help_function' to know how to use!"
-	for i in ~/.bashrc ~/.bash_login ~/.bash_profile ~/.shrc ~/.profile
-	do
-		grep -q -e HISTSIZE -e HISTFILESIZE "$i" 2>/dev/null && \
-			echo "Warning: HISTSIZE or HISTFILESIZE is set in $i!" && \
-			echo "History file features may not work"
-	done
+	coproc split_path_core
+	readarray -t -u ${COPROC[0]} patharr
+	wait $COPROC_PID
 }
 
-function fetch_remote_file ()
+function update_path ()
 {
-	local rval
-	printf "==> Fetch remote file \e[1;33m$2\e[m as \e[1;35m$1\e[m ...\n"
-	if check_command_existent curl; then
-		curl -f -o "$1" "$2"
-		rval=$?
-	elif check_command_existent wget; then
-		wget --progress=dot -O "$1" "$2"
-		rval=$?
-	elif check_command_existent fetch; then
-		fetch -o "$1" "$2"
-		rval=$?
-	elif check_command_existent ftp; then
-		ftp -o "$1" "$2"
-		rval=$?
-	else
-		echo "<== Sorry, I don't know how to fetch remote files on your system"
-		return 1
-	fi
-	if [ "$rval" = "0" ]; then
-		printf "<== \e[1;32mDone\e[m\n"
-	else
-		printf "<== \e[1;31mFailed\e[m\n"
-	fi
-	return $rval
-}
-
-function fetch_and_merge ()
-{
-	local merge_cmd
-	local merge_cmd_prog
-	local local_file="$1"
-	local remote_file="$2"
-	if fetch_remote_file "${local_file}.new" "${remote_file}"
-	then
-		if [ '!' -e "${local_file}" ]; then
-			safe_mv -vf "${local_file}.new" "${local_file}"
-		else
-			while true
-			do
-				echo ""
-				cmp "${local_file}" "${local_file}.new" &> /dev/null && \
-					echo "Downloaded file is the same as installed one." && \
-					break
-				printf "Configuration files update tool: "
-				printf "Updating \e[1;35m${local_file}\e[m\n"
-				echo ""
-				echo " Install: Install the new version"
-				echo " Keep:    Keep the old version"
-				echo " Retry:   Give up downloaded file and try the next mirror"
-				echo ""
-				echo " Diff:    View the difference between versions"
-				echo " Merge:   Merge two files by yourself"
-				echo ""
-				read -e -p "[I]nstall/(K)eep/(R)etry/(D)iff/(M)erge ? " merge_cmd
-				case "${merge_cmd}" in
-					''|I|i)
-						safe_mv -vf "${local_file}.new" "${local_file}"
-						break
-						;;
-					K|k)
-						rm -f "${local_file}.new"
-						break
-						;;
-					R|r)
-						rm -f "${local_file}.new"
-						return 1
-						;;
-					D|d)
-						diff -u "${local_file}" "${local_file}.new" | $PAGER
-						;;
-					M|m)
-						read -e -p "Merge tool: " -i "$merge_cmd_prog" merge_cmd_prog
-						if $merge_cmd_prog "${local_file}" "${local_file}.new"; then
-							break
-						else
-							echo "Command is exited with error. Please try again."
-						fi
-						;;
-					*)
-						printf " \e[33m*** Unknown command ***\e[m \n"
-						;;
-				esac
-			done
-		fi
-		return 0
-	fi
-	return 1
-}
-
-########## Configuration File End  ##########
-
-function varset ()
-{
-	local varoldvalue
-	local varnewvalue
-	while [ "$1" ]
-	do
-		eval varoldvalue=\${$1}
-		read -r -e -p "$1=" -i "$varoldvalue" varnewvalue
-		eval "$1"='"$varnewvalue"'
-		shift
-	done
-}
-
-function is_file_type ()
-{
-	local filename="$1"
-	local typename="$2"
-	shift 2
-	[ "`"$@" find "$filename" -maxdepth 0 -type "$typename"`" ] && return 0
-	return 1
-}
-
-function editlink ()
-{
-	local newdest
-	local orgdest
-	split_arguments "$@"
+	current_path=''
 	local -i i=0
-	while [ "${arglist[$i]}" ]
+	local firsttime="yes"
+	while [ "${patharr[$i]}" ]
 	do
-		if is_file_type "${arglist[$i]}" "l" "${prefixlist[@]}"; then
-			orgdest="`${prefixlist[@]} readlink "${arglist[$i]}"`"
-			read -e -p "EditLink: ${arglist[$i]} -> " -i "$orgdest" newdest
-		else
-			printf "\e[1;33mWarning\e[m: ${arglist[$i]} is not a symbolic link.\n"
-			i=$i+1
-			continue
-		fi
-		if [ "$newdest" ] && [ "$newdest" '!=' "$orgdest" ]; then
-			"${prefixlist[@]}" rm -f "${arglist[$i]}"
-			"${prefixlist[@]}" ln -sv "$newdest" "${arglist[$i]}"
+		if [ '!' "${patharr[$i]}" = "^" ]
+		then
+			if [ "$firsttime" ]
+			then
+				firsttime=''
+			else
+				current_path+=':'
+			fi
+			current_path+="${patharr[$i]}"
 		fi
 		i=$i+1
+	done
+}
+
+function old_path_editor_core ()
+{
+	if [ "$1" = "ld" ]
+	then
+		export current_path="$LD_LIBRARY_PATH"
+	else
+		export current_path="$PATH"
+	fi
+	local should_continue="yes"
+	local command
+	local command_sub
+	local command_sub2
+	local -i i
+	while [ "$should_continue" ]
+	do
+		split_path
+		i=0
+		echo "========================================"
+		while [ "${patharr[$i]}" ]
+		do
+			echo "$i: ${patharr[$i]}"
+			i=$i+1
+		done
+		[ "$i" = '0' ] && echo "(Empty or not declared)"
+		echo "========================================"
+		read -e -p "[A]ppend/(D)elete/(E)dit/(M)ove/(R)eset/(Q)uit ? " command
+		case "$command" in
+			''|A|a)
+				read -e -p "Type a new entry: " patharr[$i]
+				update_path
+				;;
+			D|d)
+				read -e -p "Index: " command_sub
+				patharr[$command_sub]='^'
+				update_path
+				;;
+			E|e)
+				read -e -p "Index: " command_sub
+				read -e -p "Modify this entry: " -i "${patharr[$command_sub]}" patharr[$command_sub]
+				update_path
+				;;
+			M|m)
+				read -e -p "From: " command_sub
+				read -e -p "To: " command_sub2
+				swaptmp="${patharr[$command_sub]}"
+				patharr[$command_sub]="${patharr[$command_sub2]}"
+				patharr[$command_sub2]="$swaptmp"
+				unset swaptmp
+				update_path
+				;;
+			R|r)
+				if [ "$1" = "ld" ]
+				then
+					current_path="$LD_LIBRARY_PATH"
+				else
+					current_path="$PATH"
+				fi
+				;;
+			Q|q)
+				if [ "$1" = "ld" ]
+				then
+					export LD_LIBRARY_PATH="$current_path"
+					echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+					history -s "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+				else
+					export PATH="$current_path"
+					echo "PATH=$PATH"
+					history -s "PATH=$PATH"
+				fi
+				should_continue=''
+				;;
+			*)
+				printf " \e[33m*** Unknown command ***\e[m \n"
+				;;
+		esac
+	done
+	unset patharr
+	unset current_path
+}
+
+function old_path_editor ()
+{
+	old_path_editor_core
+}
+
+function old_ldpath_editor ()
+{
+	old_path_editor_core ld
+}
+
+
+# Group: Trash ###############################################################
+
+alias trash_put=trash_mv
+alias trash_add=trash_mv
+alias trash_list=trash_ls
+alias trash_ct=trash_count
+alias trash_restore=trash_recover
+alias trash_rc=trash_recover
+alias trash_drop=trash_rm
+alias trash_clean=trash_rm
+
+function trash_mv ()
+{
+	[ "$#" = "0" ] && return 1
+	[ '!' -d "$trashdir" ] && createdir_askmode "$trashdir" 0700
+	local original_path
+	local current_time
+	local -i i=0
+	split_arguments "$@"
+	while [ "${arglist[$i]}" ]
+	do
+		original_path="`"${prefixlist[@]}" $realpath_program "${arglist[$i]}"`"
+		current_time=`date "+%Y%m%d-%H%M%S"`
+		better_time=`date "+%Y-%m-%d %H:%M:%S"`
+		dirname="`basename "${arglist[$i]}" | sed -e 's/-/_/g' -e 's/ /_/g'`"
+		fulldirname="$trashdir/$current_time-$dirname"
+		mkdir -p "$fulldirname"
+		echo "Move: ${arglist[$i]} -> $fulldirname"
+		"${prefixlist[@]}" mv "${arglist[$i]}" "$fulldirname"
+		if [ "$?" = "0" ]
+		then
+			echo "$better_time" > "$fulldirname/information.date"
+			echo "$original_path" > "$fulldirname/information.path"
+		else
+			rmdir "$fulldirname"
+		fi
+		i=$i+1
+		shift
 	done
 	unset arglist
 	unset prefixlist
 }
+
+function trash_ls ()
+{
+	local -i i=1
+	local oneline
+	find "$trashdir" -mindepth 1 -maxdepth 1 | sort | {
+		while read oneline
+		do
+			printf "%6d %s %s\n" "$i" \
+				"$(< "$oneline/information.date")" \
+				"$(< "$oneline/information.path")"
+			i=$i+1
+		done
+	} | $PAGER
+}
+
+function trash_cd ()
+{
+	[ -z "$1" ] && return 1
+	cd `find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n $1p`
+}
+
+function trash_pushd ()
+{
+	[ -z "$1" ] && return 1
+	pushd `find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n $1p`
+}
+
+function trash_recover ()
+{
+	[ -z "$1" ] && return 1
+	split_arguments "$@"
+	local -i i=0
+	while [ "${arglist[$i]}" ]
+	do
+		arglist[$i]="-e ${arglist[$i]}p"
+		i=$i+1
+	done
+	find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n ${arglist[*]} | {
+		while read oneline
+		do
+			local fromfile="$oneline/`basename "$(< "$oneline/information.path")"`"
+			local tofile="`dirname "$(< "$oneline/information.path")"`"
+			if [ -e "$(< "$oneline/information.path")" ]
+			then
+				echo "Destination file exists."
+				continue
+			fi
+			echo "Move: $fromfile -> $tofile"
+			"${prefixlist[@]}" mv -f "$fromfile" "$tofile"
+			if [ "$?" = "0" ]
+			then
+				echo "Remove: $oneline"
+				rm -rf "$oneline"
+			fi
+		done
+	}
+	unset arglist
+	unset prefixlist
+}
+
+function trash_rm ()
+{
+	split_arguments "$@"
+	local -i i=0
+	while [ "${arglist[$i]}" ]
+	do
+		arglist[$i]="-e ${arglist[$i]}p"
+		i=$i+1
+	done
+	trash_dirname=`find "$trashdir" -mindepth 1 -maxdepth 1 | sort | sed -n ${arglist[*]} `
+	echo 'Type rm -rf $trash_dirname to remove them.'
+	unset arglist
+	unset prefixlist
+}
+
+function trash_count ()
+{
+	find "$trashdir" -mindepth 1 -maxdepth 1 | wc | awk '{print $2}'
+}
+
+function trash_du ()
+{
+	split_arguments "$@"
+	local oneline
+	local -i i=1
+	find "$trashdir" -maxdepth 1 -mindepth 1 | sort | {
+		while read oneline
+		do
+			printf "%6d %8d %s\n" "$i" \
+				"`get_file_size "$oneline" -- "${prefixlist[@]}"`" \
+				"$(< "$oneline/information.path")"
+			i=$i+1
+		done
+	} | $PAGER
+	unset arglist
+	unset prefixlist
+}
+
+
+# Tools: Background Notify Daemon ############################################
+
+function check_dmesg ()
+{
+	[ "$#" = "0" ] && return 1
+
+	while true
+	do
+		cdm_previous_dmesg_buf="$cdm_current_dmesg_buf"
+		cdm_current_dmesg_buf="`dmesg`"
+		[ "$cdm_previous_dmesg_buf" '!=' "$cdm_current_dmesg_buf" ] && \
+			[ "$cdm_first_run" = "0" ] && \
+			echo '===> You should check the system message buffer <==='
+		sleep $1
+		[ "$?" '!=' "0" ] && return 1
+		cdm_first_run=0
+	done
+}
+
+function check_system_status ()
+{
+	[ "$#" = "0" ] && return 1
+
+	filename_mail="$MAIL"
+	filename_messages="/var/log/messages"
+	filename_audit="/var/log/audit/audit.log"
+
+	while true
+	do
+		previous_dmesg_buf="$current_dmesg_buf"
+		current_dmesg_buf="`dmesg`"
+		previous_mail_info="$current_mail_info"
+		current_mail_info="`ls -l "$filename_mail"`"
+		previous_messages_info="$current_messages_info"
+		current_messages_info="`ls -l "$filename_messages"`"
+		previous_audit_info="$current_audit_info"
+		current_audit_info="`ls -l "$filename_audit"`"
+		if [ "$first_run" = "0" ]
+		then
+			[ "$previous_dmesg_buf" '!=' "$current_dmesg_buf" ] && echo "===> The system message buffer is modified (dmesg) <==="
+			[ "$previous_mail_info" '!=' "$current_mail_info" ] && echo "===> Your mailbox $filename_mail is modified <==="
+			[ "$previous_messages_info" '!=' "$current_messages_info" ] && echo "===> $filename_messages is modified <==="
+			[ "$previous_audit_info" '!=' "$current_audit_info" ] && echo "===> $filename_audit is modified <==="
+		fi
+		sleep $1
+		first_run=0
+	done
+}
+
+
+# Tools: Backup ##############################################################
 
 function backup_file ()
 {
@@ -1273,20 +1152,129 @@ function backup_file ()
 	unset prefixlist
 }
 
-function keep_sudo_credential ()
+
+# Tools: Compatibility #######################################################
+
+function fbterm_chewing ()
 {
-	if [ "$1" ]
-	then
-		update_sudo_interval="$1"
+	if [ -z "$1" ]; then
+		fbterm -s 14 -- uim-fep -u chewing
 	else
-		update_sudo_interval="280"
+		local font_size="$1"
+		shift
+		fbterm -s "$font_size" "$@" -- uim-fep -u chewing
 	fi
-	while true
+}
+
+function gen_ms_inet_shortcut () {
+	[ "$#" != "2" ] && {
+		echo "Usage: $FUNCNAME filename url"
+	} && return 1
+
+	{
+		echo "[InternetShortcut]"
+		echo "URL=$2"
+	} > "$1"
+}
+
+function unzip_nomac ()
+{
+	unzip "$@" -x '__MACOSX/*' '*.DS_Store'
+	return $?
+}
+
+
+# Tools: GNU Screen ##########################################################
+
+function mkscreenacl ()
+{
+	local screen_permit_command="select windowlist other meta detach reset hardcopy info redisplay lastmsg next prev xon xoff windows suspend help colon copy paste writebuf readbuf displays stuff attach"
+	while [ "$1" '!=' '' ]
 	do
-		sudo -v
-		sleep "$update_sudo_interval"
+		for i in $screen_permit_command
+		do
+			echo "aclchg $1 +x $i"
+		done
+		echo "aclchg $1 -rw \"\#?\""
+		shift
 	done
 }
+
+
+
+
+# Tools: Interactive #########################################################
+
+function editlink ()
+{
+	local newdest
+	local orgdest
+	split_arguments "$@"
+	local -i i=0
+	while [ "${arglist[$i]}" ]
+	do
+		if is_file_type "${arglist[$i]}" "l" "${prefixlist[@]}"; then
+			orgdest="`${prefixlist[@]} readlink "${arglist[$i]}"`"
+			read -e -p "EditLink: ${arglist[$i]} -> " -i "$orgdest" newdest
+		else
+			printf "\e[1;33mWarning\e[m: ${arglist[$i]} is not a symbolic link.\n"
+			i=$i+1
+			continue
+		fi
+		if [ "$newdest" ] && [ "$newdest" '!=' "$orgdest" ]; then
+			"${prefixlist[@]}" rm -f "${arglist[$i]}"
+			"${prefixlist[@]}" ln -sv "$newdest" "${arglist[$i]}"
+		fi
+		i=$i+1
+	done
+	unset arglist
+	unset prefixlist
+}
+
+function mvfile ()
+{
+	local nocheck=0
+	[ "$1" = "-n" ] && nocheck=1 && shift
+	split_arguments "$@"
+	local -i i=0
+	while [ "${arglist[$i]}" ]
+	do
+		if [ "$nocheck" = "0" ] && [ '!' -e "${arglist[$i]}" ]
+		then
+			printf "\e[33mWarning\e[m: ${arglist[$i]} does not exist. (Use -n to override)\n"
+			i=$i+1
+			continue
+		fi
+		echo "Old name: ${arglist[$i]}"
+		read -p "New name: " -e -i "${arglist[$i]}" new_file_name
+		if [ "$new_file_name" ] && [ "${arglist[$i]}" != "$new_file_name" ]
+		then
+			history -s "$FUNCNAME" "$@"
+			"${prefixlist[@]}" mv -iv "${arglist[$i]}" "$new_file_name"
+			history -s "${prefixlist[@]}" mv -iv "${arglist[$i]}" "$new_file_name"
+		fi
+		i=$i+1
+	done
+	unset arglist
+	unset prefixlist
+	unset new_file_name
+}
+
+function varset ()
+{
+	local varoldvalue
+	local varnewvalue
+	while [ "$1" ]
+	do
+		eval varoldvalue=\${$1}
+		read -r -e -p "$1=" -i "$varoldvalue" varnewvalue
+		eval "$1"='"$varnewvalue"'
+		shift
+	done
+}
+
+
+# Tools: Memory ##############################################################
 
 function get_memory_info ()
 {
@@ -1342,202 +1330,8 @@ function get_memory_info ()
 	esac
 }
 
-function argv0 ()
-{
-	local execname="$1"
-	local argv0="$2"
-	shift 2
-	( exec -a "$argv0" "$execname" "$@" )
-}
 
-function chr ()
-{
-	printf $(printf '\\%03o\\n' "$1")
-}
-
-function hex ()
-{
-	printf "0x%02x\n" "$1"
-}
-
-function ord ()
-{
-	printf "%d 0x%02x 0%03o\n" "'$1" "'$1" "'$1"
-}
-
-function cc_define ()
-{
-	local -i i
-	local mycpp="${CPP}"
-	if [ -z "${mycpp}" ]; then
-		if [ -z "${CC}" ]; then
-			mycpp="cpp"
-		else
-			mycpp="${CC} -E"
-		fi
-	fi
-
-	split_arguments "$@"
-
-	{
-		(( i = 0 ))
-		while [ "${prefixlist[$i]}" ]; do
-			echo "#include <${prefixlist[$i]}>"
-			(( i++ ))
-		done
-		(( i = 0 ))
-		while [ "${arglist[$i]}" ]; do
-			echo "${arglist[$i]}"
-			(( i++ ))
-		done
-	} | ${mycpp} - | tail -n "${#arglist[@]}"
-	unset arglist
-	unset prefixlist
-}
-
-function cxx_define ()
-{
-	CPP="${CXXCPP}" CC="${CXX:-c++ -x c++}" cc_define "$@"
-}
-
-function repeat ()
-{
-	local repeat_times="$1"
-	shift
-	for ((i=0; i<repeat_times; i++))
-	do
-		"$@"
-	done
-}
-
-function wait_success ()
-{
-	local i=1
-	until "$@"; do echo "Failed ... $i"; ((i++)) ; done
-}
-
-function fbterm_chewing ()
-{
-	if [ -z "$1" ]; then
-		fbterm -s 14 -- uim-fep -u chewing
-	else
-		local font_size="$1"
-		shift
-		fbterm -s "$font_size" "$@" -- uim-fep -u chewing
-	fi
-}
-
-function set_console_title ()
-{
-	case "$TERM" in
-		screen*)
-			printf "\033]0;"
-			echo -n "$*"
-			printf "\033\\"
-			;;
-		xterm*)
-			printf "\033]0;"
-			echo -n "$*"
-			printf "\007"
-			;;
-		*)
-			echo "Your terminal may not have the hardstatus line."
-			echo "Note: TERM=$TERM"
-			;;
-	esac
-}
-
-function mvfile ()
-{
-	local nocheck=0
-	[ "$1" = "-n" ] && nocheck=1 && shift
-	split_arguments "$@"
-	local -i i=0
-	while [ "${arglist[$i]}" ]
-	do
-		if [ "$nocheck" = "0" ] && [ '!' -e "${arglist[$i]}" ]
-		then
-			printf "\e[33mWarning\e[m: ${arglist[$i]} does not exist. (Use -n to override)\n"
-			i=$i+1
-			continue
-		fi
-		echo "Old name: ${arglist[$i]}"
-		read -p "New name: " -e -i "${arglist[$i]}" new_file_name
-		if [ "$new_file_name" ] && [ "${arglist[$i]}" != "$new_file_name" ]
-		then
-			history -s "$FUNCNAME" "$@"
-			"${prefixlist[@]}" mv -iv "${arglist[$i]}" "$new_file_name"
-			history -s "${prefixlist[@]}" mv -iv "${arglist[$i]}" "$new_file_name"
-		fi
-		i=$i+1
-	done
-	unset arglist
-	unset prefixlist
-	unset new_file_name
-}
-
-function createdir_askmode ()
-{
-	newdir_mode="$2"
-	if mkdir -p "$1"
-	then
-		echo "Directory $1 is created."
-		printf "Change the mode of the directory... "
-		read -i "$newdir_mode" -p ">>> Mode: " -e newdir_mode
-		chmod "$newdir_mode" "$1"
-	else
-		echo "Cannot create directory $1!"
-		return 1
-	fi
-}
-
-function get_terminal_size ()
-{
-	# ESC 7              = 儲存游標位置和屬性
-	# ESC [r             = 啟用全螢幕捲動
-	# ESC [{row};{col}H  = 移動游標
-	# ESC 6n             = 回報目前游標位置
-	# ESC 8              = 還原游標位置和屬性
-	echo -n $'\e7\e[r\e[999;999H\e[6n\e8' 1>&2
-	read -s -d R getsize
-	echo $getsize | sed 's#..\([0-9]*\);\([0-9]*\)#LINES=\1 COLUMNS=\2#'
-}
-
-function set_terminal_size ()
-{
-	eval "export `get_terminal_size`"
-	stty cols $COLUMNS rows $LINES
-}
-
-function unzip_nomac ()
-{
-	unzip "$@" -x '__MACOSX/*' '*.DS_Store'
-	return $?
-}
-
-function gen_ms_inet_shortcut () {
-	[ "$#" != "2" ] && {
-		echo "Usage: $FUNCNAME filename url"
-	} && return 1
-
-	{
-		echo "[InternetShortcut]"
-		echo "URL=$2"
-	} > "$1"
-}
-
-function check_command_existent ()
-{
-	type "$1" &> /dev/null
-	return $?
-}
-
-function get_executable_extension ()
-{
-	local lsloc="`command which ls`"
-	local lsalt="`echo ${lsloc}.* | cut -d ' ' -f 1`"
-	cmp "$lsloc" "$lsalt" &> /dev/null && echo ${lsalt:${#lsloc}} && return
-}
+# Tools: Packages ############################################################
 
 function rpmdu () {
 	local div_base=1
@@ -1649,7 +1443,266 @@ function freebsd_ports_should_rebuild () {
 	echo $reqpkg
 }
 
-########## Help ##########
+
+# Tools: Personal Files ######################################################
+
+function check_important_files ()
+{
+	important_files="$HOME/.screenrc $HOME/.vimrc"
+	for i in $important_files
+	do
+		[ '!' -f "$i" ] && printf "\e[1;31mWarning\e[m: \e[1;33m$i\e[m does not exist.\n"
+	done
+}
+
+function prehistory_backup ()
+{
+	echo "Checking your current history file"
+	local -i currentcount="`wc -l < "$HISTFILE"`"
+	currentcount="${currentcount/ */}"
+	[ '!' -f "$historycountfile" ] && touch "$historycountfile"
+	local -i previoushistorycount="$(< "$historycountfile")"
+	if [ "$currentcount" -lt "$previoushistorycount" ]
+	then
+		printf "\e[1;31mWarning\e[m: Your $HISTFILE may be TRUNCATED OR OVERWRITTEN BY OTHER PROGRAMS!\n"
+		printf "Note: \e[1;33m$currentcount\e[m < $previoushistorycount\n"
+		echo "Your $historycountfile and $historybackupfile will not be overwritten until this problem is fixed."
+		echo " 1. Check your $HISTFILE."
+		echo " 2. Edit your $HISTFILE manually if some unexpected changes are found."
+		echo "    (You may need $historybackupfile to do it) "
+		echo " 3. Remove the file $historycountfile."
+		echo " 4. Run the command \`prehistory_backup' again."
+		return 3
+	fi
+	echo -n "Backing up your current history file ($previoushistorycount -> $currentcount, "
+	if [ "$previoushistorycount" = "$currentcount" ]
+	then
+		echo "no modification)"
+	else
+		echo "+$[$currentcount-$previoushistorycount])"
+	fi
+	echo "$currentcount" > "$historycountfile"
+	safe_cp -f "$HISTFILE" "$historybackupfile"
+}
+
+
+# Tools: Programming #########################################################
+
+function chr ()
+{
+	printf $(printf '\\%03o\\n' "$1")
+}
+
+function hex ()
+{
+	printf "0x%02x\n" "$1"
+}
+
+function ord ()
+{
+	printf "%d 0x%02x 0%03o\n" "'$1" "'$1" "'$1"
+}
+
+function argv0 ()
+{
+	local execname="$1"
+	local argv0="$2"
+	shift 2
+	( exec -a "$argv0" "$execname" "$@" )
+}
+
+function compile_all ()
+{
+	local noask=0
+	local mycc="${CC}"
+	local mycxx="${CXX}"
+	local myexe="`get_executable_extension`"
+	local newCFLAGS
+	local newCXXFLAGS
+	local newLDFLAGS
+	[ "$1" = '' ] && echo "Which file(s) do you want to compile? " && return 1
+	[ "$1" = "-n" ] && noask=1
+	if [ "$noask" = "0" ]; then
+		read -e -p "CFLAGS: " -i "$CFLAGS" newCFLAGS
+		read -e -p "CXXFLAGS: " -i "$CXXFLAGS" newCXXFLAGS
+		read -e -p "LDFLAGS: " -i "$LDFLAGS" newLDFLAGS
+		[ "$newCFLAGS" '!=' '' ] && CFLAGS=$newCFLAGS
+		[ "$newCXXFLAGS" '!=' '' ] && CXXFLAGS=$newCXXFLAGS
+		[ "$newLDFLAGS" '!=' '' ] && LDFLAGS=$newLDFLAGS
+	else
+		shift
+	fi
+	[ -z "${mycc}" ] && mycc=cc
+	[ -z "${mycxx}" ] && mycxx=c++
+	while [ "$1" '!=' '' ]
+	do
+		local targetfile="`echo "$1" | sed 's|\(.*\)\..*|\1|'`$myexe"
+		local suffix="`echo "$1" | sed 's|.*\.\(.*\)|\1|'`"
+		if [ -f "$1" ]; then
+			true
+		else
+			printf \
+			"\e[1;33mWarning\e[0m: $1 Non-existent file or not a regular file\n"
+			shift ; continue
+		fi
+		[ "$targetfile" = "$1" ] && shift && continue
+		case "$suffix" in
+			c)
+				echo "[${mycc}] $1 -> $targetfile"
+				${mycc} $CFLAGS "$1" $LDFLAGS -o "$targetfile"
+				;;
+			cpp|cxx|cc|C)
+				echo "[${mycxx}] $1 -> $targetfile"
+				${mycxx} $CXXFLAGS "$1" $LDFLAGS -o "$targetfile"
+				;;
+			*)
+				printf "$1: Unknown suffix (\e[1;33mskipped\e[0m)\n"
+				;;
+		esac
+		[ "$?" '!=' "0" ] && printf \
+			'\e[1;31mError\e[0m while compiling file\n'
+		shift
+	done
+	return 0
+}
+
+function cc_define ()
+{
+	local -i i
+	local mycpp="${CPP}"
+	if [ -z "${mycpp}" ]; then
+		if [ -z "${CC}" ]; then
+			mycpp="cpp"
+		else
+			mycpp="${CC} -E"
+		fi
+	fi
+
+	split_arguments "$@"
+
+	{
+		(( i = 0 ))
+		while [ "${prefixlist[$i]}" ]; do
+			echo "#include <${prefixlist[$i]}>"
+			(( i++ ))
+		done
+		(( i = 0 ))
+		while [ "${arglist[$i]}" ]; do
+			echo "${arglist[$i]}"
+			(( i++ ))
+		done
+	} | ${mycpp} - | tail -n "${#arglist[@]}"
+	unset arglist
+	unset prefixlist
+}
+
+function cxx_define ()
+{
+	CPP="${CXXCPP}" CC="${CXX:-c++ -x c++}" cc_define "$@"
+}
+
+
+# Tools: Repeated Tasks ######################################################
+
+function repeat ()
+{
+	local repeat_times="$1"
+	shift
+	for ((i=0; i<repeat_times; i++))
+	do
+		"$@"
+	done
+}
+
+function wait_success ()
+{
+	local i=1
+	until "$@"; do echo "Failed ... $i"; ((i++)) ; done
+}
+
+
+# Tools: Security ############################################################
+
+function keep_sudo_credential ()
+{
+	if [ "$1" ]
+	then
+		update_sudo_interval="$1"
+	else
+		update_sudo_interval="280"
+	fi
+	while true
+	do
+		sudo -v
+		sleep "$update_sudo_interval"
+	done
+}
+
+
+# Tools: Terminal ############################################################
+
+function get_terminal_size ()
+{
+	# ESC 7              = 儲存游標位置和屬性
+	# ESC [r             = 啟用全螢幕捲動
+	# ESC [{row};{col}H  = 移動游標
+	# ESC 6n             = 回報目前游標位置
+	# ESC 8              = 還原游標位置和屬性
+	echo -n $'\e7\e[r\e[999;999H\e[6n\e8' 1>&2
+	read -s -d R getsize
+	echo $getsize | sed 's#..\([0-9]*\);\([0-9]*\)#LINES=\1 COLUMNS=\2#'
+}
+
+function set_terminal_size ()
+{
+	eval "export `get_terminal_size`"
+	stty cols $COLUMNS rows $LINES
+}
+
+function set_console_title ()
+{
+	case "$TERM" in
+		screen*)
+			printf "\033]0;"
+			echo -n "$*"
+			printf "\033\\"
+			;;
+		xterm*)
+			printf "\033]0;"
+			echo -n "$*"
+			printf "\007"
+			;;
+		*)
+			echo "Your terminal may not have the hardstatus line."
+			echo "Note: TERM=$TERM"
+			;;
+	esac
+}
+
+
+# Tools: Web #################################################################
+
+function convert_to_html ()
+{
+	while [ "$1" '!=' '' ]
+	do
+		for i in "$1"
+		do
+			vim $i -c 'set background=dark' \
+				-c 'highlight PreProc ctermfg=darkcyan' \
+				-c "$BEFORE_CONVERT_TO_HTML" \
+				-c "$BEFORE_CONVERT_TO_HTML1" \
+				-c "$BEFORE_CONVERT_TO_HTML2" \
+				-c TOhtml \
+				-c :w \
+				-c :qa
+		done
+		shift
+	done
+}
+
+
+# Help
 
 alias helpf='help_function'
 alias helpm='help_myself'
@@ -1675,19 +1728,6 @@ function help_myself ()
 	done
 }
 
-function help_obsolete ()
-{
-	cat << "ENDHELPMSG"
- @@@ Obsolete Group: PATH Editor @@@
-    old_path_editor
-    old_ldpath_editor
- x  split_path
- x  split_path_core
- x  update_path
- x  old_path_editor_core
-ENDHELPMSG
-}
-
 function help_function ()
 {
 	[ "$#" = "0" ] && {
@@ -1699,7 +1739,7 @@ function help_function ()
     help_obsolete
  x  print_iconv
 
- <<< Group: Background >>>
+ <<< Group: Background Tasks >>>
     bgrun command [arguments ...]                          (bgr)
     bglist [--full]                                        (bgl, bgls)
     bgview [number]                                        (bgv)
@@ -1707,7 +1747,7 @@ function help_function ()
     bgcount                                                (bgc)
     bgdu
 
- <<< Group: Configuration File >>>
+ <<< Group: Configuration Files >>>
     configfile_fetch [git_tag [file_name_list ...]]
     configfile_initial_setup
  x  fetch_remote_file local_file_name remote_url
@@ -1719,7 +1759,7 @@ function help_function ()
  x  newpath_init
  x  newpath_gen
 
- <<< Group: Trash >>>
+ <<< Group: Trash Manager >>>
     trash_mv [filenames ...] [-- sudo_prefix ...]     (trash_put, trash_add)
     trash_ls                                          (trash_list)
     trash_cd number
@@ -1729,7 +1769,7 @@ function help_function ()
     trash_count                                       (trash_ct)
     trash_du [-- sudo_prefix ...]
 
- <<< Tools: Background Jobs >>>
+ <<< Tools: Background Notify Daemon >>>
     check_dmesg seconds
     check_system_status seconds
 
@@ -1762,15 +1802,15 @@ function help_function ()
     prehistory_backup
 
  <<< Tools: Programming >>>
-    argv0 executable arguments ... (include argv[0])
-    cc_define macro [-- included_headers ...]
-    compile_all [-n] filenames ...
-    cxx_define macro [-- included_headers ...]
     chr number
     hex number
     ord character
+    argv0 executable arguments ... (include argv[0])
+    compile_all [-n] filenames ...
+    cc_define macro [-- included_headers ...]
+    cxx_define macro [-- included_headers ...]
 
- <<< Tools: Repetitive Jobs >>>
+ <<< Tools: Repeated Tasks >>>
     repeat times arguments ...
     wait_success arguments ...
 
@@ -1778,8 +1818,9 @@ function help_function ()
     keep_sudo_credential [seconds]
 
  <<< Tools: Terminal >>>
-    set_console_title
+    get_terminal_size
     set_terminal_size
+    set_console_title
 
  <<< Tools: Web >>>
     convert_to_html filename ...
@@ -1790,7 +1831,6 @@ function help_function ()
  x  is_file_type filename type [-- sudo_prefix ...]
  x  get_file_size filename [-- sudo_prefix ...]
  x  get_executable_extension
- x  get_terminal_size
  x  split_arguments [arguments ...]
 
  <<< Aliases: Command Prompt >>>
@@ -1802,6 +1842,12 @@ function help_function ()
 
  <<< Aliases: GNU Screen >>>
     screen256     - Start GNU Screen and set TERM to screen-256color
+
+ <<< Aliases: Language >>>
+    big5          - Set Language and character sets to Taiwan Chinese Big5
+    cccc          - Set Language and character sets to 7-bit ASCII
+    enus          - Set Language and character sets to US English UTF-8
+    zhtw          - Set Language and character sets to Taiwan Chinese UTF-8
 
  <<< Aliases: Nice Format >>>
     ndate         - Format the output of `date'
@@ -1885,7 +1931,19 @@ ENDHELPMSG
 	done
 }
 
-########## Help End ##########
+function help_obsolete ()
+{
+	cat << "ENDHELPMSG"
+ @@@ Obsolete Group: PATH Editor @@@
+    old_path_editor
+    old_ldpath_editor
+ x  old_path_editor_core
+ x  split_path
+ x  split_path_core
+ x  update_path
+ENDHELPMSG
+}
+
 
 # Doing something
 
