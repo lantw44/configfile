@@ -128,7 +128,7 @@ case "$OSTYPE" in
 	*gnu*)
 		alias ls='ls --color=always -F'
 		;;
-	*freebsd*)
+	*freebsd*|*FreeBSD*)
 		alias ls='CLICOLOR=1 CLICOLOR_FORCE=1 ls -F'
 		export LSCOLORS='ExGxFxdxCxDxDxhbadacad'
 		;;
@@ -582,7 +582,7 @@ if [ -f ~/.bash_include ]; then
 	. ~/.bash_include
 fi
 EOF
-	if [[ "$OSTYPE" == *freebsd* ]]; then
+	if [[ "$OSTYPE" == *freebsd* ]] || [[ "$OSTYPE" == *FreeBSD* ]]; then
 		cat >> ~/.bash_login << "EOF"
 GET_TTY_NAME=`tty | cut -c 9`
 [ "$GET_TTY_NAME" = 'v' ] && echo "Login from local virtual terminal: `tty`"
@@ -1301,7 +1301,7 @@ function get_memory_info ()
 				echo "Swap: $swapused / $swaptotal MB (`printf %2d $(($swapused*100/$swaptotal))`%)"
 			fi
 			;;
-		*freebsd*)
+		*freebsd*|*FreeBSD*)
 			local mempagesize="`sysctl -n hw.pagesize`"
 			local mempagecount="`sysctl -n hw.availpages`"
 			local memactive="`sysctl -n vm.stats.vm.v_active_count`"
