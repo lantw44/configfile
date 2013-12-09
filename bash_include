@@ -1437,7 +1437,7 @@ function freebsd_ports_should_rebuild () {
 		/usr/local/bin/* /usr/local/sbin/* \
 		/usr/local/lib/* /usr/local/libexec/* \
 		/usr/local/libexec/*/* \
-		2>/dev/null | grep_safe 'not found' | \
+		2>/dev/null | safe_grep 'not found' | \
 		{ while read oneline; do echo ${oneline} | cut -d ' ' -f 1; done; } | uniq)
 	reqpkg=$({ for i in $reqcomp; do pkg_info -q -W $i; done } | sort | uniq)
 	echo $reqpkg
