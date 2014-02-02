@@ -53,3 +53,11 @@ http://www.tfcis.org/~lantw44/configfile/Windows/
 3. 執行 configfile_fetch 來下載新版的 bash_include 和其他設定檔。
 4. 執行 configfile_initial_setup 來讓 bash 自動載入 bash_include。
 5. 完成！執行 helpf 與 helpa 可以看到簡單的指令操作說明。
+
+簡單來說，就是依序執行以下的指令：
+
+  wget -o ~/.bash_include \
+    http://www.tfcis.org/~lantw44/configfile/Unix-like/latest/bash_include
+  source ~/.bash_include
+  configfile_fetch
+  configfile_initial_setup
