@@ -1433,13 +1433,19 @@ function rpmsize () {
 }
 
 function freebsd_ports_should_rebuild () {
+	if [ -f "/var/db/pkg/local.sqlite" ]; then
+		WITH_PKGNG="true"
+		pkg_which_cmd="pkg which -q"
+	else
+		pkg_which_cmd="pkg_info -q -W"
+	fi
 	reqcomp=$(ldd -f '%a %o %p\n' \
 		/usr/local/bin/* /usr/local/sbin/* \
 		/usr/local/lib/* /usr/local/libexec/* \
 		/usr/local/libexec/*/* \
 		2>/dev/null | safe_grep 'not found' | \
 		{ while read oneline; do echo ${oneline} | cut -d ' ' -f 1; done; } | uniq)
-	reqpkg=$({ for i in $reqcomp; do pkg_info -q -W $i; done } | sort | uniq)
+	reqpkg=$({ for i in $reqcomp; do $pkg_which_cmd $i; done } | sort | uniq)
 	echo $reqpkg
 }
 
