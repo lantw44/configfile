@@ -44,10 +44,16 @@ then
 	nocolorprompting="*$nocolorprompting"
 fi
 
-if [ "$UNDER_JHBUILD" = "true" ]
+if [ "$UNDER_JHBUILD" = "true" ] || [ "$CERTIFIED_GNOMIE" = "yes" ]
 then
 	colorprompting="$colorprompting[\[\e[1;35m\]JHBuild\[\e[m\]]"
 	nocolorprompting="$nocolorprompting[JHBuild]"
+fi
+
+if [ "$EPREFIX" ]
+then
+	colorprompting="$colorprompting[\[\e[1;35m\]Prefix\[\e[m\]]"
+	nocolorprompting="$nocolorprompting[Prefix]"
 fi
 
 if [ -f "$HOME/.bash_addps" ]
