@@ -175,7 +175,8 @@ alias resetty='stty $default_tty_setting'
 
 # Aliases: Git, GNU Screen, Vim
 
-alias git_history='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=iso'
+alias git_log='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=iso'
+alias git_log_color='git log --color --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)%C(bold blue)<%an>%Creset" --abbrev-commit'
 alias screen256='screen -T screen-256color'
 alias vimhtml='vim -c "set ts=2" -c "set sw=2"'
 
@@ -1844,7 +1845,8 @@ function help_function ()
     stopcolor     - Disable colorful PS1 prompting
 
  <<< Aliases: Git >>>
-    git_history   - Show git history in a more compact format
+    git_log       - Show git log in a more compact format
+    git_log_color - Show git log in a more colorful format
 
  <<< Aliases: GNU Screen >>>
     screen256     - Start GNU Screen and set TERM to screen-256color
