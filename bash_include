@@ -2021,8 +2021,8 @@ ulimit -S -c unlimited 2> /dev/null
 
 [ "$interactive_shell" ] && {
 	if [ "$WINDOW" ] && type screen &> /dev/null; then
-		if [[ "`screen --version`" == *4.01* ]]; then
-			echo "Setting options for GNU screen 4.1.0"
+		if [ "`screen --version | sed 's/^Screen version 4\.\([0-9]*\).*$/\1/'`" -ge "1" ]; then
+			echo "Setting options for GNU screen >= 4.1.0"
 			screen -X cjkwidth off
 		fi
 	fi
