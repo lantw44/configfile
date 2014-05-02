@@ -114,6 +114,8 @@ if g:plugins_enabled
 	Bundle 'scrooloose/nerdtree'
 	Bundle 'othree/html5.vim'
 	Bundle 'tkztmk/vim-vala'
+	Bundle 'airblade/vim-gitgutter'
+	Bundle 'rails.vim'
 	Bundle 'gtk-vim-syntax'
 	if g:use_neocomplete
 		Bundle 'Shougo/neocomplete.vim'
