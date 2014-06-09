@@ -57,7 +57,7 @@ http://www.tfcis.org/~lantw44/configfile/Windows/
 
 簡單來說，就是依序執行以下的指令：
 
-  wget -o ~/.bash_include \
+  wget -O ~/.bash_include \
     http://www.tfcis.org/~lantw44/configfile/Unix-like/latest/bash_include
   source ~/.bash_include
   configfile_fetch
