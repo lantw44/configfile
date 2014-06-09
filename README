@@ -38,7 +38,8 @@ http://www.tfcis.org/~lantw44/configfile/Windows/
 以下是目前各環境與作業系統的支援與測試情形
 
 主要支援環境                GNU/Linux、FreeBSD
-幾乎可正常運作，但不常測試  Cygwin、GNU/Hurd、NetBSD、OpenBSD
+幾乎可正常運作，但不常測試  Cygwin、GNU/Hurd、NetBSD
+已知有問題的環境            OpenBSD
 沒有測試過的環境            MinGW、Interix、Android、Mac OS X
 
 ========================================================================
