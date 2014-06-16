@@ -50,6 +50,14 @@ then
 	nocolorprompting="$nocolorprompting[Prefix]"
 fi
 
+if [ "$X_SCLS" ]
+then
+	scl_enabled="`echo "$X_SCLS" | sed 's/ *$//' | tr ' ' ','`"
+	colorprompting="$colorprompting[\[\e[1;35m\]SCL:$scl_enabled\[\e[m\]]"
+	nocolorprompting="$nocolorprompting[SCL:$scl_enabled]"
+	unset scl_enabled
+fi
+
 if [ "$UNDER_JHBUILD" = "true" ] || [ "$CERTIFIED_GNOMIE" = "yes" ]
 then
 	colorprompting="$colorprompting[\[\e[1;35m\]JHBuild\[\e[m\]]"
