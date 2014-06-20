@@ -1578,7 +1578,7 @@ function compile_all ()
 				echo "[${mycc}] $1 -> $targetfile"
 				${mycc} $CFLAGS "$1" $LDFLAGS -o "$targetfile"
 				;;
-			cpp|cxx|cc|C)
+			cpp|CPP|cp|cxx|cc|c++|C)
 				echo "[${mycxx}] $1 -> $targetfile"
 				${mycxx} $CXXFLAGS "$1" $LDFLAGS -o "$targetfile"
 				;;
