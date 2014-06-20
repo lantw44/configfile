@@ -32,7 +32,7 @@ function! SingleCompile()
 	if file_suffix == "c"
 		!${CC} ${CFLAGS} %:p:. -o %:r ${LDFLAGS} 2>&1 | tee ${HOME}${ERRFILE}
 		cg ${HOME}${ERRFILE}
-	elseif file_suffix == "cpp"
+	elseif index(['cpp', 'CPP', 'cp', 'cxx', 'cc', 'c++'], file_suffix) >= 0
 		!${CXX} ${CFLAGS} %:p:. -o %:r ${LDFLAGS} 2>&1 | tee ${HOME}${ERRFILE}
 		cg ${HOME}${ERRFILE}
 	else
@@ -101,6 +101,7 @@ au FileType php set omnifunc=phpcomplete#CompletePHP
 au FileType c set omnifunc=ccomplete#Complete
 au BufRead *.vala,*.vapi set efm=%f:%l.%c-%[%^:]%#:\ %t%[%^:]%#:\ %m
 au BufRead,BufNewFile *.vala,*.vapi setfiletype vala
+au BufRead,BufNewFile *.json set ft=json
 
 set tags+=~/.vim/tags
 
@@ -115,6 +116,7 @@ if g:plugins_enabled
 	Bundle 'othree/html5.vim'
 	Bundle 'tkztmk/vim-vala'
 	Bundle 'airblade/vim-gitgutter'
+	Bundle 'elzr/vim-json'
 	Bundle 'rails.vim'
 	Bundle 'gtk-vim-syntax'
 	if g:use_neocomplete
