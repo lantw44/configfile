@@ -23,6 +23,7 @@ case "${EXTENSION}" in
 	'doap'|'ui'|'rdf'|'omf'|'page'|'etspec'|'galview') EXTENSION="xml" ;;
 	'json') EXTENSION="js" ;;
 	'xpm') EXTENSION="c" ;;
+	'ru') EXTENSION="rb" ;;
 	'ac'|'m4'|'po'|'dirs') EXTENSION="sh" ;;
 	'am') EXTENSION="mk" ;;
 	's') EXTENSION="asm" ;;
@@ -33,6 +34,7 @@ case "${BASENAME%%.*}" in
 	Makefile|makefile|GNUmakefile|BSDmakefile|Makevars) EXTENSION=mk ;;
 	pkg-install|pkg-deinstall|pkg-req|pkg-plist|rc) EXTENSION=sh ;;
 	PKGBUILD|bash_include) EXTENSION=bash ;;
+	Gemfile|Rakefile) EXTENSION=rb ;;
 	POTFILES) EXTENSION=ini ;;
 	vimrc|vimadd) EXTENSION=vim ;;
 	patch-*) EXTENSION=patch ;;
