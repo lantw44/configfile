@@ -16,28 +16,54 @@ while \
 done
 
 case "${EXTENSION}" in
-	*project|*proj|*props|glade*) EXTENSION="xml" ;;
-	*mount) EXTENSION="ini" ;;
-	'service'|'target'|'socket'|'path'|'timer'|'client') EXTENSION="ini" ;;
-	'desktop'|'convert') EXTENSION="ini" ;;
-	'doap'|'ui'|'rdf'|'omf'|'page'|'etspec'|'galview') EXTENSION="xml" ;;
-	'json') EXTENSION="js" ;;
-	'xpm') EXTENSION="c" ;;
-	'ru') EXTENSION="rb" ;;
-	'ac'|'m4'|'po'|'dirs') EXTENSION="sh" ;;
-	'am') EXTENSION="mk" ;;
-	's') EXTENSION="asm" ;;
-	'p') EXTENSION="c" ;;
+	*project)                           EXTENSION=xml  ;; # Eclipse
+	etspec|galview)                     EXTENSION=xml  ;; # Evolution
+	schemas)                            EXTENSION=xml  ;; # GConf
+	ui|glade*)                          EXTENSION=xml  ;; # Glade
+	page)                               EXTENSION=xml  ;; # Mallard
+	*proj|*props)                       EXTENSION=xml  ;; # MS Visual Studio
+	doap)                               EXTENSION=xml  ;; # project description
+	client)                             EXTENSION=xml  ;; # Telepathy
+	rdf|omf)                            EXTENSION=xml  ;;
+	convert)                            EXTENSION=ini  ;; # dconf
+	service)                            EXTENSION=ini  ;; # D-BUS
+	desktop)                            EXTENSION=ini  ;; # Launcher
+	socket|device|mount|automount)      EXTENSION=ini  ;; # Systemd
+	automount|swap|target|path)         EXTENSION=ini  ;; # Systemd
+	timer|snapshot|slice|scope)         EXTENSION=ini  ;; # Systemd
+	ac|m4)                              EXTENSION=sh   ;; # Autoconf
+	po|pot)                             EXTENSION=sh   ;; # Gettext
+	dirs)                               EXTENSION=sh   ;; # user-dirs.dirs
+	am)                                 EXTENSION=mk   ;; # Automake
+	p)                                  EXTENSION=c    ;; # MapleBBS
+	xpm)                                EXTENSION=c    ;;
+	s)                                  EXTENSION=asm  ;;
+	json)                               EXTENSION=js   ;;
+	ru)                                 EXTENSION=rb   ;; # config.ru
 esac
 
 case "${BASENAME%%.*}" in
-	Makefile|makefile|GNUmakefile|BSDmakefile|Makevars) EXTENSION=mk ;;
-	pkg-install|pkg-deinstall|pkg-req|pkg-plist|rc) EXTENSION=sh ;;
-	PKGBUILD|bash_include) EXTENSION=bash ;;
-	Gemfile|Rakefile) EXTENSION=rb ;;
-	POTFILES) EXTENSION=ini ;;
-	vimrc|vimadd) EXTENSION=vim ;;
-	patch-*) EXTENSION=patch ;;
+	BSDmakefile)                        EXTENSION=mk   ;; # BSD make
+	GNUmakefile)                        EXTENSION=mk   ;; # GNU make
+	Makefile|makefile)                  EXTENSION=mk   ;; # Make
+	Makevars)                           EXTENSION=mk   ;;
+	configure)                          EXTENSION=sh   ;; # Autoconf
+	PKGBUILD)                           EXTENSION=sh   ;; # Arch Linux PKGBUILD
+	bashrc|bash_login|bash_profile)     EXTENSION=sh   ;; # Bash login script
+	bash_logout)                        EXTENSION=sh   ;; # Bash logout script
+	bash_include)                       EXTENSION=sh   ;;
+	ebuild)                             EXTENSION=sh   ;; # Gentoo ebuild
+	pkg-install|pkg-deinstall)          EXTENSION=sh   ;; # FreeBSD ports
+	pkg-req|pkg-plist)                  EXTENSION=sh   ;; # FreeBSD ports
+	rc)                                 EXTENSION=sh   ;; # FreeBSD rc
+	kshrc)                              EXTENSION=sh   ;; # ksh script
+	zshrc)                              EXTENSION=sh   ;; # zsh script
+	login|cshrc|tcshrc)                 EXTENSION=tcsh ;; # tcsh script
+	POTFILES)                           EXTENSION=ini  ;; # Gettext
+	patch-*)                            EXTENSION=diff ;; # FreeBSD ports
+	vimrc)                              EXTENSION=vim  ;; # vim script
+	vimadd)                             EXTENSION=vim  ;;
+	Gemfile|Rakefile)                   EXTENSION=rb   ;;
 esac
 
 case "${CGIT_REPO_NAME}" in
