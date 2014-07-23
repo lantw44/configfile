@@ -22,6 +22,7 @@ case "${EXTENSION}" in
 	ui|glade*)                          EXTENSION=xml  ;; # Glade
 	page)                               EXTENSION=xml  ;; # Mallard
 	*proj|*props)                       EXTENSION=xml  ;; # MS Visual Studio
+	policy)                             EXTENSION=xml  ;; # polkit
 	doap)                               EXTENSION=xml  ;; # project description
 	client)                             EXTENSION=xml  ;; # Telepathy
 	rdf|omf)                            EXTENSION=xml  ;;
@@ -38,6 +39,7 @@ case "${EXTENSION}" in
 	p)                                  EXTENSION=c    ;; # MapleBBS
 	xpm)                                EXTENSION=c    ;;
 	s)                                  EXTENSION=asm  ;;
+	rules)                              EXTENSION=js   ;; # polkit
 	json)                               EXTENSION=js   ;;
 	ru)                                 EXTENSION=rb   ;; # config.ru
 esac
