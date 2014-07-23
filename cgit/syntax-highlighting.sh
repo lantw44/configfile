@@ -10,6 +10,7 @@ TABSTOP="4"
 while \
 	[ "${EXTENSION}" = "in" ] || \
 	[ "${EXTENSION}" = "inc" ] || \
+	[ "${EXTENSION}" = "filters" ] || \
 	[ "${EXTENSION}" = "template" ]; do
 	BASENAME="${BASENAME%.*}"; EXTENSION="${BASENAME##*.}"
 done
