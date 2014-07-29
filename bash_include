@@ -70,6 +70,18 @@ then
 	nocolorprompting="$nocolorprompting[Android]"
 fi
 
+if [ "$OSTYPE" = "cygwin" ]
+then
+	colorprompting="$colorprompting[\[\e[1;35m\]Cygwin\[\e[m\]]"
+	nocolorprompting="$nocolorprompting[Cygwin]"
+fi
+
+if [ "$OSTYPE" = "msys" ]
+then
+	colorprompting="$colorprompting[\[\e[1;35m\]MSYS\[\e[m\]]"
+	nocolorprompting="$nocolorprompting[MSYS]"
+fi
+
 if [ -f "$HOME/.bash_addps" ]
 then
 	exec 3< "$HOME/.bash_addps"
