@@ -103,6 +103,8 @@ au FileType c set omnifunc=ccomplete#Complete
 au BufRead *.vala,*.vapi set efm=%f:%l.%c-%[%^:]%#:\ %t%[%^:]%#:\ %m
 au BufRead,BufNewFile *.vala,*.vapi setfiletype vala
 au BufRead,BufNewFile *.json set ft=json
+au BufRead,BufNewFile *.slim setfiletype slim
+au BufRead,BufNewFile *.coffee setfiletype coffee
 
 set tags+=~/.vim/tags
 
@@ -116,6 +118,9 @@ if g:use_plugins
 	Plugin 'tkztmk/vim-vala'
 	Plugin 'airblade/vim-gitgutter'
 	Plugin 'elzr/vim-json'
+	Plugin 'slim-template/vim-slim'
+	Plugin 'kchmck/vim-coffee-script'
+	Plugin 'gtags.vim'
 	Plugin 'rails.vim'
 	Plugin 'gtk-vim-syntax'
 
@@ -156,17 +161,17 @@ if g:use_plugins
 endif
 
 if has("cscope")
-    set cst
-    set csverb
-    set cscopequickfix=s-,c-,d-,i-,t-,e-
-    nmap <C-\>s :cs find s <C-R>=expand("<cword>")<CR><CR>
-    nmap <C-\>g :cs find g <C-R>=expand("<cword>")<CR><CR>
-    nmap <C-\>c :cs find c <C-R>=expand("<cword>")<CR><CR>
-    nmap <C-\>t :cs find t <C-R>=expand("<cword>")<CR><CR>
-    nmap <C-\>e :cs find e <C-R>=expand("<cword>")<CR><CR>
-    nmap <C-\>f :cs find f <C-R>=expand("<cfile>")<CR><CR>
-    nmap <C-\>i :cs find i <C-R>=expand("<cfile>")<CR>$<CR>
-    nmap <C-\>d :cs find d <C-R>=expand("<cword>")<CR><CR>
+	set cst
+	set csverb
+	set cscopequickfix=s-,c-,d-,i-,t-,e-
+	nmap <C-\>s :cs find s <C-R>=expand("<cword>")<CR><CR>
+	nmap <C-\>g :cs find g <C-R>=expand("<cword>")<CR><CR>
+	nmap <C-\>c :cs find c <C-R>=expand("<cword>")<CR><CR>
+	nmap <C-\>t :cs find t <C-R>=expand("<cword>")<CR><CR>
+	nmap <C-\>e :cs find e <C-R>=expand("<cword>")<CR><CR>
+	nmap <C-\>f :cs find f <C-R>=expand("<cfile>")<CR><CR>
+	nmap <C-\>i :cs find i <C-R>=expand("<cfile>")<CR>$<CR>
+	nmap <C-\>d :cs find d <C-R>=expand("<cword>")<CR><CR>
 endif
 
 "set guifont=Droid\ Sans\ Mono\ for\ Powerline\ 11
