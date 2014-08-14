@@ -157,7 +157,7 @@ alias less='less -RS'
 alias grep='grep --color=always'
 
 case "$OSTYPE" in
-	*gnu*)
+	*gnu*|*cygwin*|*msys*)
 		alias ls='ls --color=always -F'
 		;;
 	*freebsd*|*FreeBSD*)
