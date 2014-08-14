@@ -5,9 +5,10 @@ let $CXX="c++"
 let $CFLAGS="-Wall -pipe -g"
 let $LDFLAGS=""
 let g:quick_fix_window_on = 0
-let g:plugins_enabled = 0
-let g:use_neocomplete = 0
-let g:no_patched_fonts = 1
+let g:use_plugins = 0
+let g:use_powerline = 0
+let g:use_powerline_fonts = 0
+let g:use_youcompleteme = 0
 set bs=2
 set ls=2
 set ts=4
@@ -62,8 +63,8 @@ endfunction
 
 function! LoadGtkSyntaxFiles()
 	for i in ['atk', 'atspi', 'cairo', 'clutter', 'dbusglib', 'evince', 'gdkpixbuf', 'gimp', 'glib', 'gnomedesktop', 'gobjectintrospection', 'gstreamer', 'gtk2', 'gtk3', 'gtkglext', 'gtksourceview', 'jsonglib', 'libgsf', 'libnotify', 'librsvg', 'libsoup', 'libunique', 'libwnck', 'pango', 'poppler', 'vte', 'xlib' ]
-	  execute 'runtime! syntax/' . i . '.vim'
-	  execute 'let ' . i . '_deprecated_errors = 1'
+		execute 'runtime! syntax/' . i . '.vim'
+		execute 'let ' . i . '_deprecated_errors = 1'
 	endfor
 endfunction
 
@@ -105,43 +106,56 @@ au BufRead,BufNewFile *.json set ft=json
 
 set tags+=~/.vim/tags
 
-if g:plugins_enabled
+if g:use_plugins
 	set rtp+=~/.vim/bundle/vundle
-	set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
 	call vundle#rc()
-	Bundle 'gmarik/vundle'
-	Bundle 'Lokaltog/powerline'
-	Bundle 'majutsushi/tagbar'
-	Bundle 'scrooloose/nerdtree'
-	Bundle 'othree/html5.vim'
-	Bundle 'tkztmk/vim-vala'
-	Bundle 'airblade/vim-gitgutter'
-	Bundle 'elzr/vim-json'
-	Bundle 'rails.vim'
-	Bundle 'gtk-vim-syntax'
-	if g:use_neocomplete
-		Bundle 'Shougo/neocomplete.vim'
-		Bundle 'Shougo/vimproc'
-		Bundle 'Shougo/context_filetype.vim'
+	Plugin 'gmarik/vundle'
+	Plugin 'majutsushi/tagbar'
+	Plugin 'scrooloose/nerdtree'
+	Plugin 'othree/html5.vim'
+	Plugin 'tkztmk/vim-vala'
+	Plugin 'airblade/vim-gitgutter'
+	Plugin 'elzr/vim-json'
+	Plugin 'rails.vim'
+	Plugin 'gtk-vim-syntax'
+
+	if g:use_powerline
+		Plugin 'Lokaltog/powerline'
+		set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
+		if !g:use_powerline_fonts
+			let g:powerline_config_overrides = { "common": { "dividers": {
+			\	"left":  { "hard": "  ", "soft": " |" },
+			\	"right": { "hard": "  ", "soft": " |" } } } }
+		endif
+	else
+		Plugin 'bling/vim-airline'
+		Plugin 'tpope/vim-fugitive'
+		let g:aireline_detect_iminsert = 1
+		let g:airline#extensions#tabline#enabled = 1
+		if g:use_powerline_fonts
+			let g:airline_powerline_fonts = 1
+		endif
+	endif
+
+	if g:use_youcompleteme
+		Plugin 'Valloric/YouCompleteMe'
+	else
+		Plugin 'Shougo/neocomplete.vim'
+		Plugin 'Shougo/vimproc'
+		Plugin 'Shougo/context_filetype.vim'
 		let g:neocomplete#enable_at_startup = 1
 		let g:neocomplete#enable_auto_select = 1
 		let g:neocomplete#enable_insert_char_pre = 1
 		let g:neocomplete#enable_fuzzy_completion = 1
 		let g:neocomplete#max_list = 10
 		let g:neocomplete#data_directory = "~/tmp/neocomplete"
-	else
-		Bundle 'Valloric/YouCompleteMe'
 	endif
-	if g:no_patched_fonts
-		let g:powerline_config_overrides = { "common": { "dividers": {
-		\	"left":  { "hard": "  ", "soft": " |" },
-		\	"right": { "hard": "  ", "soft": " |" } } } }
-	endif
+
 	au FileType c call LoadGtkSyntaxFiles()
 	au FileType cpp call LoadGtkSyntaxFiles()
 endif
 
-if has("cscope")                                 
+if has("cscope")
     set cst
     set csverb
     set cscopequickfix=s-,c-,d-,i-,t-,e-
@@ -155,4 +169,4 @@ if has("cscope")
     nmap <C-\>d :cs find d <C-R>=expand("<cword>")<CR><CR>
 endif
 
-"set guifont=Liberation\ Mono\ for\ Powerline\ 11
+"set guifont=Droid\ Sans\ Mono\ for\ Powerline\ 11
