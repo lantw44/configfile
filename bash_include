@@ -1297,7 +1297,7 @@ function mvfile ()
 	local -i i=0
 	while [ "${arglist[$i]}" ]
 	do
-		if [ "$nocheck" = "0" ] && [ '!' -e "${arglist[$i]}" ]
+		if [ "$nocheck" = "0" ] && [ '!' -e "${arglist[$i]}" ] && [ '!' -h "${arglist[$i]}" ]
 		then
 			printf "\e[33mWarning\e[m: ${arglist[$i]} does not exist. (Use -n to override)\n"
 			i=$i+1
