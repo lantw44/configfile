@@ -154,15 +154,20 @@ alias cp='cp -pi'
 alias mv='mv -i'
 alias jobs='jobs -l'
 alias less='less -RS'
-alias grep='grep --color=always'
 
 case "$OSTYPE" in
-	*gnu*|*cygwin*|*msys*)
+	*gnu*|*cygwin*|*msys*|*solaris*)
 		alias ls='ls --color=always -F'
 		;;
-	*freebsd*|*FreeBSD*)
+	*freebsd*)
 		alias ls='CLICOLOR=1 CLICOLOR_FORCE=1 ls -F'
 		export LSCOLORS='ExGxFxdxCxDxDxhbadacad'
+		;;
+esac
+
+case "$OSTYPE" in
+	*gnu*|*cygwin*|*msys*|*freebsd*|*netbsd*|*solaris*)
+		alias grep='grep --color=always'
 		;;
 esac
 
@@ -170,12 +175,28 @@ esac
 # Aliases: Non-aliased common tools (safe for use in script)
 
 alias safe_ls='\ls'
+alias safe_ln='\ln'
 alias safe_cp='\cp'
 alias safe_mv='\mv'
 alias safe_rm='\rm'
 alias safe_jobs='\jobs'
 alias safe_less='\less'
 alias safe_grep='GREP_OPTIONS= \grep'
+
+case "$OSTYPE" in
+	*openbsd*)
+		alias safe_mv_verbose='safe_mv'
+		alias safe_ln_verbose='safe_ln'
+		safe_mv_verbose='mv'
+		safe_ln_verbose='ln'
+		;;
+	*)
+		alias safe_mv_verbose='safe_mv -v'
+		alias safe_ln_verbose='safe_ln -v'
+		safe_mv_verbose='mv -v'
+		safe_ln_verbose='ln -v'
+		;;
+esac
 
 
 # Aliases: Command Prompt
@@ -460,15 +481,19 @@ function fetch_remote_file ()
 {
 	local rval
 	printf "==> Fetch remote file \e[1;33m$2\e[m as \e[1;35m$1\e[m ...\n"
+	# cURL - cross-platform
 	if check_command_existent curl; then
 		curl -f -o "$1" "$2"
 		rval=$?
+	# wget - GNU, cross-platform
 	elif check_command_existent wget; then
 		wget --progress=dot -O "$1" "$2"
 		rval=$?
+	# fetch - FreeBSD
 	elif check_command_existent fetch; then
 		fetch -o "$1" "$2"
 		rval=$?
+	# ftp - NetBSD / OpenBSD
 	elif check_command_existent ftp; then
 		ftp -o "$1" "$2"
 		rval=$?
@@ -493,7 +518,7 @@ function fetch_and_merge ()
 	if fetch_remote_file "${local_file}.new" "${remote_file}"
 	then
 		if [ '!' -e "${local_file}" ]; then
-			safe_mv -vf "${local_file}.new" "${local_file}"
+			safe_mv_verbose -f "${local_file}.new" "${local_file}"
 		else
 			while true
 			do
@@ -514,7 +539,7 @@ function fetch_and_merge ()
 				read -e -p "[I]nstall/(K)eep/(R)etry/(D)iff/(M)erge ? " merge_cmd
 				case "${merge_cmd}" in
 					''|I|i)
-						safe_mv -vf "${local_file}.new" "${local_file}"
+						safe_mv_verbose -f "${local_file}.new" "${local_file}"
 						break
 						;;
 					K|k)
@@ -1256,7 +1281,7 @@ function editlink ()
 		fi
 		if [ "$newdest" ] && [ "$newdest" '!=' "$orgdest" ]; then
 			"${prefixlist[@]}" rm -f "${arglist[$i]}"
-			"${prefixlist[@]}" ln -sv "$newdest" "${arglist[$i]}"
+			"${prefixlist[@]}" ${safe_ln_verbose} -s "$newdest" "${arglist[$i]}"
 		fi
 		i=$i+1
 	done
@@ -1283,8 +1308,8 @@ function mvfile ()
 		if [ "$new_file_name" ] && [ "${arglist[$i]}" != "$new_file_name" ]
 		then
 			history -s "$FUNCNAME" "$@"
-			"${prefixlist[@]}" mv -iv "${arglist[$i]}" "$new_file_name"
-			history -s "${prefixlist[@]}" mv -iv "${arglist[$i]}" "$new_file_name"
+			"${prefixlist[@]}" ${safe_mv_verbose} -i "${arglist[$i]}" "$new_file_name"
+			history -s "${prefixlist[@]}" ${safe_mv_verbose} -i "${arglist[$i]}" "$new_file_name"
 		fi
 		i=$i+1
 	done
