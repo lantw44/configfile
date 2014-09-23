@@ -234,6 +234,32 @@ alias screen256='screen -T screen-256color'
 alias vimhtml='vim -c "set ts=2" -c "set sw=2"'
 
 
+# Functions: Overrided external commands to prevent misuse ###################
+
+function git ()
+{
+	if [ "$1" = "commit" ]; then
+		if [ "`command git config user.name`" = "LAN-TW" ]; then
+			printf '==> \e[1;31mBASHRC ERROR\e[m: STOP USING THIS CRYPTIC NAME!\n'
+			return 1
+		fi
+		if command git config user.name | safe_grep ' ' >/dev/null; then :;
+		else
+			printf '==> \e[1;31mBASHRC ERROR\e[m: Your real name does not contain spaces!\n'
+			return 1
+		fi
+		if [[ "$PWD" == *gnome* ]] || [[ "$PWD" == *jhbuild* ]]; then
+			if [[ "`command git config user.email`" == *gnome* ]]; then :;
+			else
+				printf '==> \e[1;31mBASHRC ERROR\e[m: Please use GNOME email for GNOME project!\n'
+				return 2
+			fi
+		fi
+	fi
+	command git "$@"
+}
+
+
 # Functions: Shared Internal Functions #######################################
 
 function createdir_askmode ()
