@@ -156,7 +156,7 @@ alias jobs='jobs -l'
 alias less='less -RS'
 
 case "$OSTYPE" in
-	*gnu*|*cygwin*|*msys*|*solaris*)
+	*gnu*|*cygwin*|*msys*|*solaris*|*darwin*)
 		alias ls='ls --color=always -F'
 		;;
 	*freebsd*)
@@ -166,7 +166,7 @@ case "$OSTYPE" in
 esac
 
 case "$OSTYPE" in
-	*gnu*|*cygwin*|*msys*|*freebsd*|*netbsd*|*solaris*)
+	*gnu*|*cygwin*|*msys*|*freebsd*|*netbsd*|*solaris*|*darwin*)
 		alias grep='grep --color=always'
 		;;
 esac
