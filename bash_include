@@ -1838,49 +1838,6 @@ help_function
     註：前方加上「x」符號者表示此為內部使用的函式，不宜直接使用
 ENDHELPMSG
 				;;
-			bgrun|bgr)
-				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
-bgrun command [arguments ...]
-    執行指令 command 並將輸出導入檔案
-    註：此函式會自動以目前時間和指令名稱為檔案命名
-ENDHELPMSG
-				;;
-			bglist|bgl|bgls)
-				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
-bglist [--full]
-    列出所有使用 bgrun 執行的指令
-    若加上 --full 選項，則可同時察看時間
-ENDHELPMSG
-				;;
-			bgview|bgv)
-				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
-bgview [number]
-    顯示以 bgrun 執行指令的輸出，若省略 number，表示是最近一次執行的指令
-    若 number >  0，
-        表示第 number 個指令 (此數值可由 bglist 函式取得)
-    若 number <= 0，
-        表示第「指令總數-number」個指令 (指令總數可由 bgcount 函式取得)
-ENDHELPMSG
-				;;
-			bgclean|bgrm)
-				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
-bgclean [all | numbers ...]
-    bgclean all 可清除所有指令的輸出檔
-    bgclean 3 5 7 10 表示清除第 3、5、7、10 個指令輸出檔 (編號可由 bglist 取得)
-ENDHELPMSG
-				;;
-			bgcount|bgc)
-				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
-bgcount
-    顯示指令輸出檔總數
-ENDHELPMSG
-				;;
-			bgdu)
-				cat << "ENDHELPMSG" | print_iconv "UTF-8" "$current_charset"
-bgdu
-    顯示每個指令輸出檔的檔案大小 (單位：KB)
-ENDHELPMSG
-				;;
 			*)
 				echo "Help message for $1 is not found"
 				;;
