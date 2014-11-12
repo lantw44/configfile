@@ -1229,42 +1229,50 @@ function get_memory_info ()
 {
 	case "$OSTYPE" in
 		*linux*|*gnu*)
-			local meminfoline="`free -m | safe_grep -i mem`"
-			local swapinfoline="`free -m | safe_grep -i swap`"
-			local memtotal="`echo "$meminfoline" | awk '{print $2}'`"
-			local memused="`echo "$meminfoline" | awk '{print $3}'`"
-			local membuf="`echo "$meminfoline" | awk '{print $6}'`"
-			local memcache="`echo "$meminfoline" | awk '{print $7}'`"
-			local memprog=$(($memused-$membuf-$memcache))
-			local swaptotal="`echo "$swapinfoline" | awk '{print $2}'`"
-			local swapused="`echo "$swapinfoline" | awk '{print $3}'`"
-			echo "Memory: $memused / $memtotal MB (`printf %2d $(($memused*100/$memtotal))`%)"
+			local memtotal="`  safe_grep '^MemTotal:'  /proc/meminfo | awk '{print $2}'`"
+			local memfree="`   safe_grep '^MemFree:'   /proc/meminfo | awk '{print $2}'`"
+			local membuffers="`safe_grep '^Buffers:'   /proc/meminfo | awk '{print $2}'`"
+			local memcached="` safe_grep '^Cached:'    /proc/meminfo | awk '{print $2}'`"
+			local memslab="`   safe_grep '^Slab:'      /proc/meminfo | awk '{print $2}'`"
+			local swaptotal="` safe_grep '^SwapTotal:' /proc/meminfo | awk '{print $2}'`"
+			local swapfree="`  safe_grep '^SwapFree:'  /proc/meminfo | awk '{print $2}'`"
+			test -z "$memslab" && memslab="0" # GNU/Hurd compatibility
+			local memoldused=$(( $memtotal - $memfree ))
+			local memused=$(( $memtotal - $memfree - $membuffers - $memcached - $memslab ))
+			local swapused=$(( $swaptotal - $swapfree ))
+			echo "Memory: $(( $memoldused / 1024 )) / $(( $memtotal / 1024  )) MB (`printf %2d $(( $memoldused * 100 / $memtotal  ))`%)"
 			echo "Detail:"
-			echo "    Used:    `printf %5d $memprog` MB (`printf %2d $(($memprog*100/$memtotal))`%)"
-			echo "    Buffers: `printf %5d $membuf` MB (`printf %2d $(($membuf*100/$memtotal))`%)"
-			echo "    Cached:  `printf %5d $memcache` MB (`printf %2d $(($memcache*100/$memtotal))`%)"
-			if [ "$swaptotal" = "0" ]
-			then
+			echo "    Used:    `printf %6d $(( $memused             / 1024 ))` MB (`printf %2d $(( $memused    * 100 / $memtotal  ))`%)"
+			echo "    Buffers: `printf %6d $(( $membuffers          / 1024 ))` MB (`printf %2d $(( $membuffers * 100 / $memtotal  ))`%)"
+			echo "    Cached:  `printf %6d $(( $memcached           / 1024 ))` MB (`printf %2d $(( $memcached  * 100 / $memtotal  ))`%)"
+			if [ "$memslab" = "0" ]; then
+				echo "    Slab:      not available"
+			else
+				echo "    Slab:    `printf %6d $(( $memslab         / 1024 ))` MB (`printf %2d $(( $memslab    * 100 / $memtotal  ))`%)"
+			fi
+			if [ "$swaptotal" = "0" ]; then
 				echo "Swap: not available"
 			else
-				echo "Swap: $swapused / $swaptotal MB (`printf %2d $(($swapused*100/$swaptotal))`%)"
+				echo "Swap: $(( $swapused / 1024 )) / $(( $swaptotal / 1024 )) MB (`printf %2d $(( $swapused   * 100 / $swaptotal ))`%)"
 			fi
 			;;
-		*freebsd*|*FreeBSD*)
-			local mempagesize="`sysctl -n hw.pagesize`"
-			local mempagecount="`sysctl -n hw.availpages`"
-			local memactive="`sysctl -n vm.stats.vm.v_active_count`"
-			local meminactive="`sysctl -n vm.stats.vm.v_inactive_count`"
-			local memwire="`sysctl -n vm.stats.vm.v_wire_count`"
-			local memcache="`sysctl -n vm.stats.vm.v_cache_count`"
-			local memfree="`sysctl -n vm.stats.vm.v_free_count`"
-			local swapenabled="`sysctl -n vm.swap_enabled`"
-			echo "Memory (Active):   `printf %5d $(($memactive*$mempagesize/1048576))` MB (`printf %2d $(($memactive*100/$mempagecount))`%)"
-			echo "Memory (Inactive): `printf %5d $(($meminactive*$mempagesize/1048576))` MB (`printf %2d $(($meminactive*100/$mempagecount))`%)"
-			echo "Memory (Wired):    `printf %5d $(($memwire*$mempagesize/1048576))` MB (`printf %2d $(($memwire*100/$mempagecount))`%)"
-			echo "Memory (Cache):    `printf %5d $(($memcache*$mempagesize/1048576))` MB (`printf %2d $(($memcache*100/$mempagecount))`%)"
-			echo "Memory (Free):     `printf %5d $(($memfree*$mempagesize/1048576))` MB (`printf %2d $(($memfree*100/$mempagecount))`%)"
-			echo "Total Memory:      `printf %5d $(($mempagecount*$mempagesize/1048576))` MB"
+		*freebsd*)
+			local mempagesize="` sysctl -n hw.pagesize`"
+			local mempagecount="`sysctl -n vm.stats.vm.v_page_count`"
+			local memactive="`   sysctl -n vm.stats.vm.v_active_count`"
+			local meminactive="` sysctl -n vm.stats.vm.v_inactive_count`"
+			local memwire="`     sysctl -n vm.stats.vm.v_wire_count`"
+			local memcache="`    sysctl -n vm.stats.vm.v_cache_count`"
+			local membuffer="`   sysctl -n vfs.bufspace`"
+			local memfree="`     sysctl -n vm.stats.vm.v_free_count`"
+			local swapenabled="` sysctl -n vm.swap_enabled`"
+			echo "Memory (Active):   `printf %6d $(( $memactive    * $mempagesize / 1048576))` MB (`printf %2d $(( $memactive   * 100 / $mempagecount ))`%)"
+			echo "Memory (Inactive): `printf %6d $(( $meminactive  * $mempagesize / 1048576))` MB (`printf %2d $(( $meminactive * 100 / $mempagecount ))`%)"
+			echo "Memory (Wired):    `printf %6d $(( $memwire      * $mempagesize / 1048576))` MB (`printf %2d $(( $memwire     * 100 / $mempagecount ))`%)"
+			echo "Memory (Cache):    `printf %6d $(( $memcache     * $mempagesize / 1048576))` MB (`printf %2d $(( $memcache    * 100 / $mempagecount ))`%)"
+			echo "Memory (Buffer):   `printf %6d $(( $membuffer                   / 1048576))` MB (`printf %2d $(( $membuffer   * 100 / $mempagecount / $mempagesize ))`%)"
+			echo "Memory (Free):     `printf %6d $(( $memfree      * $mempagesize / 1048576))` MB (`printf %2d $(( $memfree     * 100 / $mempagecount ))`%)"
+			echo "Total Memory:      `printf %6d $(( $mempagecount * $mempagesize / 1048576))` MB"
 			if [ "$swapenabled" = "1" ]; then
 				echo ""
 				echo "Swap devices:"
@@ -1272,6 +1280,44 @@ function get_memory_info ()
 			else
 				echo "Swap: not enabled"
 			fi
+			;;
+		*netbsd*)
+			local mempagesize="` sysctl -n hw.pagesize`"
+			local mempagecount="`vmstat -t | tail -n 1                            | awk '{print $5}'`"
+			local memactive="`   vmstat -s | safe_grep 'pages active$'            | awk '{print $1}'`"
+			local meminactive="` vmstat -s | safe_grep 'pages inactive$'          | awk '{print $1}'`"
+			local memwired="`    vmstat -s | safe_grep 'pages wired$'             | awk '{print $1}'`"
+			local memexec="`     vmstat -s | safe_grep 'cached executable pages$' | awk '{print $1}'`"
+			local memfile="`     vmstat -s | safe_grep 'cached file pages$'       | awk '{print $1}'`"
+			local memfree="`     vmstat -s | safe_grep 'pages free$'              | awk '{print $1}'`"
+			echo "Memory (Active):   `printf %6d $(( $memactive    * $mempagesize / 1048576))` MB (`printf %2d $(( $memactive   * 100 / $mempagecount ))`%)"
+			echo "Memory (Inactive): `printf %6d $(( $meminactive  * $mempagesize / 1048576))` MB (`printf %2d $(( $meminactive * 100 / $mempagecount ))`%)"
+			echo "Memory (Wired):    `printf %6d $(( $memwired     * $mempagesize / 1048576))` MB (`printf %2d $(( $memwired    * 100 / $mempagecount ))`%)"
+			echo "Memory (Exec):     `printf %6d $(( $memexec      * $mempagesize / 1048576))` MB (`printf %2d $(( $memexec     * 100 / $mempagecount ))`%)"
+			echo "Memory (File):     `printf %6d $(( $memfile      * $mempagesize / 1048576))` MB (`printf %2d $(( $memfile     * 100 / $mempagecount ))`%)"
+			echo "Memory (Free):     `printf %6d $(( $memfree      * $mempagesize / 1048576))` MB (`printf %2d $(( $memfree     * 100 / $mempagecount ))`%)"
+			echo "Total Memory:      `printf %6d $(( $mempagecount * $mempagesize / 1048576))` MB"
+			echo ""
+			echo "Swap devices"
+			swapctl -lm
+			;;
+		*openbsd*)
+			local mempagesize="` sysctl -n hw.pagesize`"
+			local mempagecount="`vmstat -s | safe_grep 'pages managed$'           | awk '{print $1}'`"
+			local memactive="`   vmstat -s | safe_grep 'pages active$'            | awk '{print $1}'`"
+			local meminactive="` vmstat -s | safe_grep 'pages inactive$'          | awk '{print $1}'`"
+			local memwired="`    vmstat -s | safe_grep 'pages wired$'             | awk '{print $1}'`"
+			local memcache="`    top -n | sed -n -e '4s/.*Cache: \([0-9]*\)M.*/\1/' -e 4p`"
+			local memfree="`     vmstat -s | safe_grep 'pages free$'              | awk '{print $1}'`"
+			echo "Memory (Active):   `printf %6d $(( $memactive    * $mempagesize / 1048576))` MB (`printf %2d $(( $memactive   * 100 / $mempagecount ))`%)"
+			echo "Memory (Inactive): `printf %6d $(( $meminactive  * $mempagesize / 1048576))` MB (`printf %2d $(( $meminactive * 100 / $mempagecount ))`%)"
+			echo "Memory (Wired):    `printf %6d $(( $memwired     * $mempagesize / 1048576))` MB (`printf %2d $(( $memwired    * 100 / $mempagecount ))`%)"
+			echo "Memory (Cache):    `printf %6d $(( $memcache                             ))` MB (`printf %2d $(( $memcache    * 104857600 / $mempagecount / $mempagesize))`%)"
+			echo "Memory (Free):     `printf %6d $(( $memfree      * $mempagesize / 1048576))` MB (`printf %2d $(( $memfree     * 100 / $mempagecount ))`%)"
+			echo "Total Memory:      `printf %6d $(( $mempagecount * $mempagesize / 1048576))` MB"
+			echo ""
+			echo "Swap devices"
+			swapctl -lk
 			;;
 		*)
 			echo "Unsupported operating system."
