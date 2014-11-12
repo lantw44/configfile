@@ -599,8 +599,8 @@ function fetch_and_merge ()
 function configfile_fetch ()
 {
 	local cgit_mirror_list=(
-		"http://www.tfcis.org/~lantw44/cgit/cgit.cgi/configfile/plain"
-		"http://phantom.tfcis.org/~lantw44/cgit/cgit.cgi/configfile/plain"
+		"http://www.tfcis.org/~lantw44/cgit/configfile/plain"
+		"http://phantom.tfcis.org/~lantw44/cgit/configfile/plain"
 		"http://master.lant.com.tw/~lantw44/cgit/cgit.cgi/configfile/plain")
 	local github_mirror_list=(
 		"https://raw.github.com/lantw44/configfile"
