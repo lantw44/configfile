@@ -1319,6 +1319,9 @@ function get_memory_info ()
 			echo "Swap devices"
 			swapctl -lk
 			;;
+		*solaris*)
+			top -n | sed -n -e 5p
+			;;
 		*)
 			echo "Unsupported operating system."
 			;;
