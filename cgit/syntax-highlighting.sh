@@ -17,6 +17,7 @@ done
 
 case "${EXTENSION}" in
 	*project)                           EXTENSION=xml  ;; # Eclipse
+	anjuta)                             EXTENSION=xml  ;; # Anjuta
 	etspec|galview)                     EXTENSION=xml  ;; # Evolution
 	schemas)                            EXTENSION=xml  ;; # GConf
 	ui|glade*)                          EXTENSION=xml  ;; # Glade
