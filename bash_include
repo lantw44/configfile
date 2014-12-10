@@ -138,7 +138,6 @@ export FCEDIT=vim
 export VISUAL=vim
 export PAGER=less
 export GCC_COLORS=1
-export GREP_OPTIONS='--color=auto'
 
 
 # Aliases: Replace common tools
