@@ -996,6 +996,134 @@ function trash_du ()
 }
 
 
+# Group: Windows Executable Helpers ##########################################
+
+function windows_exe_get_deps () {
+	: ${OBJDUMP:="objdump"}
+	LANG=C LC_ALL=C LANGUAGE= ${OBJDUMP} -p "$1" | \
+		safe_grep 'DLL Name' | \
+		sed 's|[ 	]*DLL Name: \(.*\)$|\1|'
+}
+
+function windows_dll_is_builtin () {
+	local builtin_dlls=(
+		advapi32.dll
+		comctl32.dll
+		comdlg32.dll
+		crypt32.dll
+		dnsapi.dll
+		gdi32.dll
+		gdiplus.dll
+		imm32.dll
+		iphlpapi.dll
+		kernel32.dll
+		msimg32.dll
+		msvcpp.dll
+		msvcrt.dll
+		mpr.dll
+		netapi32.dll
+		ntdll.dll
+		ole32.dll
+		oleaut32.dll
+		opengl32.dll
+		rpcrt4.dll
+		setupapi.dll
+		shell32.dll
+		shlwapi.dll
+		user32.dll
+		usp10.dll
+		version.dll
+		winmm.dll
+		winspool.drv
+		ws2_32.dll
+	)
+	local i
+	for ((i=0; i<"${#builtin_dlls[@]}"; i++)) {
+		if [ "${1,,}" = "${builtin_dlls[$i],,}" ]; then
+			return 0
+		fi
+	}
+	return 1
+}
+
+function windows_exe_find_dlls () {
+	local thisfile="$1"
+	local verbose="$2"
+	local level="$3"
+	local found
+	local i
+
+	for dll in `windows_exe_get_deps "$1"`; do
+		if windows_dll_is_builtin "$dll"; then
+			continue
+		fi
+
+		found="false"
+
+		if [ "${windows_exe_needed_dlls[$dll]}" ]; then
+			if [ "$verbose" = "true" ]; then
+				repeat "$level" echo -n '  '
+				echo "$dll => ${windows_exe_needed_dlls[$dll]}"
+			fi
+			continue
+		fi
+
+		for ((i=0; i<"${#windows_exe_dll_dirs[@]}"; i++)) {
+			if [ -f "${windows_exe_dll_dirs[$i]}/$dll" ]; then
+				if [ "$verbose" = "true" ]; then
+					repeat "$level" echo -n '  '
+					echo "$dll => ${windows_exe_dll_dirs[$i]}/$dll"
+				fi
+				windows_exe_needed_dlls[$dll]="${windows_exe_dll_dirs[$i]}/$dll"
+				windows_exe_find_dlls "${windows_exe_dll_dirs[$i]}/$dll" \
+					"$verbose" "$(( $level + 1 ))"
+				found="true"
+				break
+			fi
+		}
+
+		if [ "$verbose" = "true" ] && [ "$found" = "false" ]; then
+			repeat "$level" echo -n '  '
+			echo "$dll => not found"
+		fi
+	done
+}
+
+function windows_exe_copy () {
+	local dry_run="false"
+	local verbose="false"
+
+	if [ "$1" = "-n" ]; then
+		dry_run="true"
+		verbose="true"
+		shift
+	fi
+
+	local exefile="$1"
+	local destdir="$2"
+	shift 2
+
+	declare -a windows_exe_dll_dirs=("$@")
+	declare -A windows_exe_needed_dlls
+
+	if [ "$verbose" = "true" ]; then
+		echo "$exefile"
+	fi
+	windows_exe_find_dlls "$exefile" "$verbose" "1"
+
+	for i in "${!windows_exe_needed_dlls[@]}"; do
+		if [ "$dry_run" = "false" ]; then
+			echo "Copying ${windows_exe_needed_dlls[$i]} ..."
+			mkdir -p "$destdir"
+			safe_cp "${windows_exe_needed_dlls[$i]}" "$destdir"
+		fi
+	done
+
+	unset windows_exe_dll_dirs
+	unset windows_exe_needed_dlls
+}
+
+
 # Tools: Background Notify Daemon ############################################
 
 function check_dmesg ()
@@ -1610,6 +1738,7 @@ function cxx_define ()
 function repeat ()
 {
 	local repeat_times="$1"
+	local i
 	shift
 	for ((i=0; i<repeat_times; i++))
 	do
@@ -1771,6 +1900,12 @@ function help_function ()
     trash_rm numbers ...                              (trash_drop, trash_clean)
     trash_count                                       (trash_ct)
     trash_du [-- sudo_prefix ...]
+
+ <<< Group: Windows Executable Helpers >>>
+    windows_exe_get_deps
+    windows_exe_copy
+ x  windows_dll_is_builtin
+ x  windows_exe_find_dlls
 
  <<< Tools: Background Notify Daemon >>>
     check_dmesg seconds
