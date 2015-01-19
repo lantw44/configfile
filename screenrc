@@ -1,18 +1,19 @@
 caption always "%{= ky}%H  %{= kc}%-Lw%{= br}%n %t%{= kc}%+Lw %=%{= g}%l"
 termcapinfo xterm*|rxvt*|kterm*|Eterm* 'hs:ts=\E]0;:fs=\007:ds=\E]0;\007'
 
+defscrollback 65536
+hardstatus lastline
+hardstatus string '%h%? users: %u%?'
+ignorecase on
 vbell off
 vbellwait 0
-defscrollback 65536
-
-hardcopydir /home/lantw44/hardcopy
-
-deflogin on
-shell -bash
-screen
-title bash
-deflogin off
-
 zombie ^C^R
 
-ignorecase on
+# The first window should be a login shell
+deflogin on
+shell -$SHELL
+screen
+
+# Other windows are non-login shells
+shell $SHELL
+deflogin off
