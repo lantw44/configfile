@@ -125,7 +125,7 @@ if g:use_plugins
 	Plugin 'gtk-vim-syntax'
 
 	if g:use_powerline
-		Plugin 'Lokaltog/powerline'
+		Plugin 'powerline/powerline'
 		set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
 		if !g:use_powerline_fonts
 			let g:powerline_config_overrides = { "common": { "dividers": {
