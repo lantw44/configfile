@@ -1340,10 +1340,15 @@ function varset ()
 {
 	local varoldvalue
 	local varnewvalue
+	local noecho
+	if [ "$1" = "-p" ]; then
+		noecho="-s"
+		shift
+	fi
 	while [ "$1" ]
 	do
 		eval varoldvalue=\${$1}
-		read -r -e -p "$1=" -i "$varoldvalue" varnewvalue
+		read -r -e -p "$1=" -i "$varoldvalue" $noecho varnewvalue
 		eval "$1"='"$varnewvalue"'
 		shift
 	done
@@ -1925,7 +1930,7 @@ function help_function ()
  <<< Tools: Interactive >>>
     editlink filenames ... [-- sudo_prefix ...]
     mvfile [-n] filenames ... [-- sudo_prefix ...]
-    varset variables ...
+    varset [-p] variables ...
 
  <<< Tools: Memory >>>
     get_memory_info
