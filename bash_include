@@ -1439,7 +1439,7 @@ function get_memory_info ()
 			local memactive="`   vmstat -s | safe_grep 'pages active$'            | awk '{print $1}'`"
 			local meminactive="` vmstat -s | safe_grep 'pages inactive$'          | awk '{print $1}'`"
 			local memwired="`    vmstat -s | safe_grep 'pages wired$'             | awk '{print $1}'`"
-			local memcache="`    top -n | sed -n -e '4s/.*Cache: \([0-9]*\)M.*/\1/' -e 4p`"
+			local memcache="`    top -n | grep '^Memory:' | sed -n -e '1s/.*Cache: \([0-9]*\)M.*/\1/' -e 1p`"
 			local memfree="`     vmstat -s | safe_grep 'pages free$'              | awk '{print $1}'`"
 			echo "Memory (Active):   `printf %6d $(( $memactive    * $mempagesize / 1048576))` MB (`printf %2d $(( $memactive   * 100 / $mempagecount ))`%)"
 			echo "Memory (Inactive): `printf %6d $(( $meminactive  * $mempagesize / 1048576))` MB (`printf %2d $(( $meminactive * 100 / $mempagecount ))`%)"
