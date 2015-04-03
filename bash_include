@@ -1914,9 +1914,9 @@ function help_function ()
     trash_du [-- sudo_prefix ...]
 
  <<< Group: Windows Executable Helpers >>>
-    windows_exe_get_deps
-    windows_exe_copy
- x  windows_dll_is_builtin
+    windows_exe_get_deps dll_or_exe
+    windows_exe_copy [-n] dll_or_exe destdir libdir ...
+ x  windows_dll_is_builtin dll_or_exe
  x  windows_exe_find_dlls
 
  <<< Tools: Background Notify Daemon >>>
