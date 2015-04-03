@@ -998,14 +998,16 @@ function trash_du ()
 
 # Group: Windows Executable Helpers ##########################################
 
-function windows_exe_get_deps () {
+function windows_exe_get_deps ()
+{
 	: ${OBJDUMP:="objdump"}
 	LANG=C LC_ALL=C LANGUAGE= ${OBJDUMP} -p "$1" | \
 		safe_grep 'DLL Name' | \
 		sed 's|[ 	]*DLL Name: \(.*\)$|\1|'
 }
 
-function windows_dll_is_builtin () {
+function windows_dll_is_builtin ()
+{
 	local builtin_dlls=(
 		advapi32.dll
 		comctl32.dll
@@ -1046,7 +1048,8 @@ function windows_dll_is_builtin () {
 	return 1
 }
 
-function windows_exe_find_dlls () {
+function windows_exe_find_dlls ()
+{
 	local thisfile="$1"
 	local verbose="$2"
 	local level="$3"
@@ -1089,7 +1092,8 @@ function windows_exe_find_dlls () {
 	done
 }
 
-function windows_exe_copy () {
+function windows_exe_copy ()
+{
 	local dry_run="false"
 	local verbose="false"
 
@@ -1241,8 +1245,8 @@ function fbterm_chewing ()
 		fbterm -s "$font_size" "$@" -- uim-fep -u chewing
 	fi
 }
-
-function gen_ms_inet_shortcut () {
+function gen_ms_inet_shortcut ()
+{
 	[ "$#" != "2" ] && {
 		echo "Usage: $FUNCNAME filename url"
 	} && return 1
@@ -1463,7 +1467,8 @@ function get_memory_info ()
 
 # Tools: Packages ############################################################
 
-function rpmdu () {
+function rpmdu ()
+{
 	local div_base=1
 	local div_name="KB"
 	local total=0
@@ -1515,7 +1520,8 @@ function rpmdu () {
 	done
 }
 
-function rpmsize () {
+function rpmsize ()
+{
 	local div_base=1
 	local div_name="Bytes"
 	local total=0
@@ -1562,7 +1568,8 @@ function rpmsize () {
 	done
 }
 
-function freebsd_ports_should_rebuild () {
+function freebsd_ports_should_rebuild ()
+{
 	if [ -f "/var/db/pkg/local.sqlite" ]; then
 		WITH_PKGNG="true"
 		pkg_which_cmd="pkg which -q"
