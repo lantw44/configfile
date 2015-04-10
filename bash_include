@@ -1207,6 +1207,10 @@ function windows_exe_copy ()
 		dry_run="true"
 		verbose="true"
 		shift
+	elif [ "$1" = "-p" ]; then
+		dry_run="true"
+		verbose="false"
+		shift
 	fi
 
 	local exefile="$1"
@@ -1226,6 +1230,8 @@ function windows_exe_copy ()
 			echo "Copying ${windows_exe_needed_dlls[$i]} ..."
 			mkdir -p "$destdir"
 			safe_cp "${windows_exe_needed_dlls[$i]}" "$destdir"
+		else
+			echo "${windows_exe_needed_dlls[$i]}"
 		fi
 	done
 
@@ -2025,7 +2031,7 @@ function help_function ()
 
  <<< Group: Windows Executable Helpers >>>
     windows_exe_get_deps dll_or_exe
-    windows_exe_copy [-n] dll_or_exe destdir libdir ...
+    windows_exe_copy [-n|-p] dll_or_exe destdir libdir ...
  x  windows_dll_is_builtin dll_or_exe
  x  windows_exe_find_dlls
 
