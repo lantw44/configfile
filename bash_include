@@ -1230,7 +1230,7 @@ function windows_exe_copy ()
 			echo "Copying ${windows_exe_needed_dlls[$i]} ..."
 			mkdir -p "$destdir"
 			safe_cp "${windows_exe_needed_dlls[$i]}" "$destdir"
-		else
+		elif [ "$verbose" = "false" ]; then
 			echo "${windows_exe_needed_dlls[$i]}"
 		fi
 	done
