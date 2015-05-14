@@ -116,6 +116,7 @@ if g:use_plugins
 	Plugin 'scrooloose/nerdtree'
 	Plugin 'othree/html5.vim'
 	Plugin 'tkztmk/vim-vala'
+	Plugin 'petRUShka/vim-opencl'
 	Plugin 'airblade/vim-gitgutter'
 	Plugin 'elzr/vim-json'
 	Plugin 'slim-template/vim-slim'
