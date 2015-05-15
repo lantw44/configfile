@@ -14,7 +14,7 @@ if [[ "$-" == *i* ]] ; then interactive_shell=1; fi
 [ "$interactive_shell" ] && echo "Running .bash_include"
 [ "$interactive_shell" ] && default_tty_setting="`stty -g`"
 [ "$interactive_shell" ] && TTY="`tty`" && \
-	if [[ "$TTY" =~ "/dev/tty"[0-9]+ ]]; then
+	if [[ "$TTY" =~ "/dev/tty"[1-9]+ ]]; then
 		tty_short="#v${TTY:8}"
 	elif [[ "$TTY" == "/dev/tty"* ]]; then
 		tty_short="#${TTY:8}"
