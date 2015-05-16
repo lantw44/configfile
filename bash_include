@@ -619,11 +619,11 @@ function configfile_fetch ()
 	fi
 
 	args=("$@")
-	for((i=1, j=0; i<=$#; i++, j++)){
+	for((i=1, j=0; i<$#; i++, j++)){
 		file_name[$j]="${args[$i]}"
 	}
 
-	if [ -z "$file_name"]; then
+	if [ -z "$file_name" ]; then
 		file_name=("bash_include" "vimrc" "screenrc")
 	fi
 
