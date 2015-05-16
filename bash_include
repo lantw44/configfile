@@ -182,14 +182,18 @@ alias safe_grep='GREP_OPTIONS= \grep'
 
 case "$OSTYPE" in
 	*openbsd*)
+		alias safe_cp_verbose='safe_cp'
 		alias safe_mv_verbose='safe_mv'
 		alias safe_ln_verbose='safe_ln'
+		safe_cp_verbose='cp'
 		safe_mv_verbose='mv'
 		safe_ln_verbose='ln'
 		;;
 	*)
+		alias safe_cp_verbose='safe_cp -v'
 		alias safe_mv_verbose='safe_mv -v'
 		alias safe_ln_verbose='safe_ln -v'
+		safe_cp_verbose='cp -v'
 		safe_mv_verbose='mv -v'
 		safe_ln_verbose='ln -v'
 		;;
@@ -1680,6 +1684,51 @@ function rpmsize ()
 	done
 }
 
+function rpm_source_repackage ()
+{
+	local tmptop="`mktemp --tmpdir -d rpm_source_repackage.XXXXXXXXXX`"
+	local args=("$@")
+	local srpm="$1"
+	local -a cmd
+	local -i i
+
+	echo "==> Installing source packages: $1"
+	rpm --define "_topdir $tmptop" -ivh "$1"
+	safe_cp "$tmptop/SPECS"/*.spec "$tmptop/SOURCES"
+
+	echo "==> Entering directory: $tmptop/SOURCES"
+	pushd "$tmptop/SOURCES" >/dev/null
+
+	for((i=1; i<$#; i++)) {
+		if [ "${args[$i]}" = "--" ]; then
+			if [ "$cmd" ]; then
+				echo "==> Running command: ${cmd[@]}"
+				"${cmd[@]}"
+				cmd=()
+			fi
+		else
+			cmd+=("${args[$i]}")
+		fi
+	}
+
+	if [ "$cmd" ]; then
+		echo "==> Running command: ${cmd[@]}"
+		"${cmd[@]}"
+	fi
+
+	safe_cp "$tmptop/SOURCES"/*.spec "$tmptop/SPECS"
+
+	echo "==> Rebuilding source packages"
+	rpmbuild --define "_topdir $tmptop" -bs "$tmptop/SPECS"/*.spec
+
+	echo "==> Leaving directory: $tmptop/SOURCES"
+	popd >/dev/null
+
+	echo "==> Copying built source packages"
+	safe_cp_verbose -i "$tmptop/SRPMS"/*.src.rpm .
+	rm -rf "$tmptop"
+}
+
 function freebsd_ports_should_rebuild ()
 {
 	if [ -f "/var/db/pkg/local.sqlite" ]; then
@@ -2061,6 +2110,7 @@ function help_function ()
  <<< Tools: Packages >>>
     rpmdu [-kmg] packages ...
     rpmsize [-bkmg] packages ...
+    rpm_source_repackage srpm -- command1 ... [-- command2 ...]
     freebsd_ports_should_rebuild
 
  <<< Tools: Personal Files >>>
