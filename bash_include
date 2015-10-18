@@ -1124,6 +1124,7 @@ function windows_dll_is_builtin ()
 		comdlg32.dll
 		crypt32.dll
 		dnsapi.dll
+		dwmapi.dll
 		gdi32.dll
 		gdiplus.dll
 		imm32.dll
