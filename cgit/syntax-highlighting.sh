@@ -1,18 +1,20 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 BASENAME="$1"
 EXTENSION="${BASENAME##*.}"
 TABSTOP="4"
 
-[ "${BASENAME}" = "${EXTENSION}" ] && EXTENSION=txt
-[ -z "${EXTENSION}" ] && EXTENSION=txt
+if [ -z "${EXTENSION}" ] || [ "${BASENAME}" = "${EXTENSION}" ]; then
+	EXTENSION=txt
+fi
 
 while \
 	[ "${EXTENSION}" = "in" ] || \
 	[ "${EXTENSION}" = "inc" ] || \
 	[ "${EXTENSION}" = "filters" ] || \
 	[ "${EXTENSION}" = "template" ]; do
-	BASENAME="${BASENAME%.*}"; EXTENSION="${BASENAME##*.}"
+	BASENAME="${BASENAME%.*}"
+	EXTENSION="${BASENAME##*.}"
 done
 
 case "${EXTENSION}" in
@@ -31,11 +33,12 @@ case "${EXTENSION}" in
 	service)                            EXTENSION=ini  ;; # D-BUS
 	desktop)                            EXTENSION=ini  ;; # Launcher
 	socket|device|mount|automount)      EXTENSION=ini  ;; # Systemd
-	automount|swap|target|path)         EXTENSION=ini  ;; # Systemd
+	swap|target|path)                   EXTENSION=ini  ;; # Systemd
 	timer|snapshot|slice|scope)         EXTENSION=ini  ;; # Systemd
 	ac|m4)                              EXTENSION=sh   ;; # Autoconf
 	po|pot)                             EXTENSION=sh   ;; # Gettext
 	dirs)                               EXTENSION=sh   ;; # user-dirs.dirs
+	install)                            EXTENSION=sh   ;; # Arch Linux PKGBUILD
 	am)                                 EXTENSION=mk   ;; # Automake
 	p)                                  EXTENSION=c    ;; # MapleBBS
 	xpm)                                EXTENSION=c    ;;
@@ -70,17 +73,21 @@ case "${BASENAME%%.*}" in
 esac
 
 case "${CGIT_REPO_NAME}" in
-    taiwan-online-judge*) TABSTOP=8 ;;
-    *) TABSTOP=4 ;;
+	taiwan-online-judge*) TABSTOP=8 ;;
+	*) TABSTOP=4 ;;
 esac
 
-HIGHLIGHT="/usr/bin/highlight --force -f -I --inline-css -s edit-gedit -O xhtml -t $TABSTOP -S $EXTENSION"
+HIGHLIGHT=(
+	highlight --force -f -I --inline-css
+	-s edit-gedit -O xhtml
+	-t "${TABSTOP}" -S "${EXTENSION}"
+)
 
 case "${CGIT_REPO_NAME}" in
-    *bbs|maple3-itoc)
-        /usr/bin/iconv -f Big5 -t UTF-8 | $HIGHLIGHT 2>/dev/null
-        ;;
-    *)
-        exec $HIGHLIGHT 2>/dev/null
-        ;;
+	*bbs|maple3-itoc)
+		iconv -c -f Big5 -t UTF-8 2>/dev/null | "${HIGHLIGHT[@]}" 2>/dev/null
+		;;
+	*)
+		exec "${HIGHLIGHT[@]}" 2>/dev/null
+		;;
 esac
