@@ -158,10 +158,10 @@ alias jobs='jobs -l'
 alias less='less -RS'
 
 case "$OSTYPE" in
-	*gnu*|*cygwin*|*msys*|*solaris*|*darwin*)
+	*gnu*|*cygwin*|*msys*|*solaris*)
 		alias ls='ls --color=always -F'
 		;;
-	*freebsd*)
+	*freebsd*|*darwin*)
 		alias ls='CLICOLOR=1 CLICOLOR_FORCE=1 ls -F'
 		export LSCOLORS='ExGxFxdxCxDxDxhbadacad'
 		;;
