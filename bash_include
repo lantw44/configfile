@@ -2272,14 +2272,23 @@ fi
 
 ulimit -S -c unlimited 2> /dev/null
 
-[ "$interactive_shell" ] && {
+[ "$interactive_shell" ] && (
 	if [ "$WINDOW" ] && type screen &> /dev/null; then
-		if [ "`screen --version | sed 's/^Screen version 4\.\([0-9]*\).*$/\1/'`" -ge "1" ]; then
-			echo "Setting options for GNU screen >= 4.1.0"
+		version="$(screen --version | sed 's|^Screen version \([^ ]*\) .*|\1|')"
+		IFS=. read -r major minor _ <<< "$version"
+		if [ "$major" -ge 5 ] || { [ "$major" -eq 4 ] && [ "$minor" -ge 1 ]; }; then
+			echo 'Setting options for GNU screen >= 4.1.0'
 			screen -X cjkwidth off
 		fi
+		if [ "$major" -ge 5 ]; then
+			echo 'Setting options for GNU screen >= 5.0.0'
+			screen -X backtick 1 5 60 \
+				timeout 1 sh -c 'uptime | sed -e "s|.*: ||" -e "s|,||g"'
+			screen -X caption always \
+				'%{= 3;0}%H  %{= 6;0}%-Lw%{= 1;4}%n%f %t%{= 6;0}%+Lw %=%{= 2;0}%1`'
+		fi
 	fi
-}
+)
 
 [ "$interactive_shell" ] && {
 	echo "Done"
